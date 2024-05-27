@@ -10,6 +10,7 @@ import com.ashapiro.catanserver.socketPayload.game.SocketRequestStartGamePayload
 import com.ashapiro.catanserver.util.LobbyUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.net.Socket;
 import java.util.List;
@@ -26,10 +27,10 @@ public class StartGameHandler implements EventHandler {
 
     private final UserService userService;
 
+    @Transactional
     @Override
     public <T extends SocketMessagePayload> void handle(T message, Socket clientSocket) {
         if (message instanceof SocketRequestStartGamePayload) {
-            SocketRequestStartGamePayload startGamePayload = (SocketRequestStartGamePayload) message;
             String token = socketMap.get(clientSocket);
             if (token != null && !token.isEmpty()) {
                 User user = userService.findUserByToken(token)
