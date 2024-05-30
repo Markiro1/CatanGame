@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Scope;
 
 import java.net.Socket;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Configuration
@@ -29,7 +30,7 @@ public class ServerBeans {
 
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
-    public Map<Socket, String> socketMap() {
+    public Map<Socket, Optional<String>> socketMap() {
         return new ConcurrentHashMap<>();
     }
 }
