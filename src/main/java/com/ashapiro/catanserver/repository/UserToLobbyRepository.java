@@ -13,4 +13,6 @@ public interface UserToLobbyRepository extends JpaRepository<UserToLobby, Long> 
 
     @Query("select utl.lobby.id from UserToLobby utl where utl.user.id = :userId")
     Long getLobbyIdByUserId(Long userId);
+
+    Long findLobbyIdByUserToken(String token);
 }
