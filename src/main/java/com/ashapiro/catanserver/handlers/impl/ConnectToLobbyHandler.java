@@ -26,6 +26,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 
 @Component
@@ -36,7 +37,7 @@ public class ConnectToLobbyHandler implements EventHandler {
 
     private final UserService userService;
 
-    private final Map<Socket, String> socketMap;
+    private final Map<Socket, Optional<String>> socketMap;
 
     private final ObjectMapper objectMapper;
 
@@ -54,7 +55,7 @@ public class ConnectToLobbyHandler implements EventHandler {
                     .orElseThrow(() -> new NoSuchElementException("User not found with token: " + token));
             Lobby lobby = user.getUserToLobby().getLobby();
 
-            addUserToMap(clientSocket, token);
+            addUserToMap(clientSocket, Optional.of(token));
             updateStatusConnect(user.getUserToLobby());
             List<String> allTokensInLobby = lobby.getAllTokenUsersInLobby();
 
@@ -85,7 +86,7 @@ public class ConnectToLobbyHandler implements EventHandler {
         userToLobby.setStatus(UserToLobby.ConnectionStatus.CONNECTED);
     }
 
-    private void addUserToMap(Socket clientSocket, String token) {
+    private void addUserToMap(Socket clientSocket, Optional<String> token) {
         socketMap.put(clientSocket, token);
     }
 }
