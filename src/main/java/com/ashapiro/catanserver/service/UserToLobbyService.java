@@ -4,8 +4,6 @@ import com.ashapiro.catanserver.entity.Lobby;
 import com.ashapiro.catanserver.entity.User;
 import com.ashapiro.catanserver.entity.UserToLobby;
 
-import java.util.List;
-
 public interface UserToLobbyService {
 
     UserToLobby createSession(User user, Lobby lobby);
@@ -14,4 +12,5 @@ public interface UserToLobbyService {
 
     void removeUserFromLobby(User user);
 
+    Long findLobbyIdByToken(String token);
 }
