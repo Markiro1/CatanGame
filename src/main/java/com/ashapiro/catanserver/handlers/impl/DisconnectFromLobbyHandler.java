@@ -19,6 +19,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -31,14 +32,15 @@ public class DisconnectFromLobbyHandler implements EventHandler {
 
     private final LobbyUtils lobbyUtils;
 
-    private final Map<Socket, String> socketMap;
+    private final Map<Socket, Optional<String>> socketMap;
 
     @Transactional
     @Override
     public <T extends SocketMessagePayload> void handle(T message, Socket clientSocket) {
         log.info("Handling disconnect from lobby...");
-        String token = socketMap.get(clientSocket);
-        if (token != null && !token.isEmpty()) {
+        String token = socketMap.get(clientSocket)
+                .orElseThrow(() -> new NoSuchElementException("token not found"));
+        if (!token.isEmpty()) {
             try {
                 User user = userService.findUserByToken(token)
                         .orElseThrow(() -> new NoSuchElementException("User not found with token: " + token));
