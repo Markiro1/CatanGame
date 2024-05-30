@@ -1,14 +1,13 @@
 package com.ashapiro.catanserver.util;
 
 import com.ashapiro.catanserver.dto.user.SimpleUserDto;
-import com.ashapiro.catanserver.socketPayload.game.SocketBroadcastStartGamePayload;
-import com.ashapiro.catanserver.socketPayload.lobby.SocketBroadcastConnectToLobbyPayload;
-import com.ashapiro.catanserver.socketPayload.lobby.SocketBroadcastDisconnectFromLobbyPayload;
 import com.ashapiro.catanserver.entity.Lobby;
 import com.ashapiro.catanserver.entity.User;
 import com.ashapiro.catanserver.entity.UserToLobby;
 import com.ashapiro.catanserver.enums.EventType;
 import com.ashapiro.catanserver.service.UserToLobbyService;
+import com.ashapiro.catanserver.socketPayload.lobby.SocketBroadcastConnectToLobbyPayload;
+import com.ashapiro.catanserver.socketPayload.lobby.SocketBroadcastDisconnectFromLobbyPayload;
 import com.ashapiro.catanserver.socketPayload.lobby.SocketBroadcastNewHostInLobbyPayload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +18,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -28,7 +28,7 @@ public class LobbyUtils {
 
     private final ObjectMapper objectMapper;
 
-    private final Map<Socket, String> socketMap;
+    private final Map<Socket, Optional<String>> socketMap;
 
     public void removeUserFromLobbyIfPresent(User user) {
         UserToLobby userToLobby = user.getUserToLobby();
@@ -51,33 +51,9 @@ public class LobbyUtils {
         }
     }
 
-
-   /* public void removeUserFromLobbyIfPresent(User user) {
-        System.out.println("get userToLobby");
-        UserToLobby userToLobby = user.getUserToLobby();
-        System.out.println("get userToLobby");
-        if (userToLobby != null) {
-            List<String> allTokensInLobby = userToLobbyService.getAllTokensFromLobbyByLogin(user.getLogin());
-            allTokensInLobby.forEach(token -> {
-                socketMap.forEach((socket, value) -> {
-                    if (token.equals(value)) {
-                        try {
-                            userToLobbyService.removeUserFromLobby(user);
-                            SimpleUserDto simpleUser = new SimpleUserDto(user.getId(), user.getUsername());
-                            sendDisconnectMessageToUser(socket, simpleUser);
-                        } catch (IOException e) {
-                            throw new RuntimeException();
-                        }
-                    }
-                });
-            });
-        }
-    }*/
-
     public void sendMessageToAllUsersInLobby(List<String> allTokensInLobby, SimpleUserDto user, EventType eventType) {
-        //List<String> allTokensInLobby = userToLobbyService.getAllTokensFromLobbyByLogin(user.getLogin());
         socketMap.forEach((socket, t) -> {
-            if (allTokensInLobby.contains(t)) {
+            if (allTokensInLobby.contains(t.get())) {
                 try {
                     switch (eventType) {
                         case BROADCAST_USER_CONNECTION_TO_LOBBY -> {
@@ -103,14 +79,6 @@ public class LobbyUtils {
                                     .eventType(eventType)
                                     .user(user)
                                     .message(String.format("%s is new host", user.getName()))
-                                    .build();
-                            sendMessage(socket, broadcast);
-                        }
-
-                        case BROADCAST_START_GAME -> {
-                            SocketBroadcastStartGamePayload broadcast = SocketBroadcastStartGamePayload.builder()
-                                    .eventType(eventType)
-                                    .message("Starting game...")
                                     .build();
                             sendMessage(socket, broadcast);
                         }
