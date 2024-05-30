@@ -7,6 +7,7 @@ import com.ashapiro.catanserver.handlers.impl.DisconnectFromLobbyHandler;
 import com.ashapiro.catanserver.socketPayload.SocketMessagePayload;
 import com.ashapiro.catanserver.socketPayload.game.SocketRequestStartGamePayload;
 import com.ashapiro.catanserver.socketPayload.lobby.SocketRequestConnectToLobbyPayload;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,11 +17,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -33,13 +30,13 @@ public class SocketService implements CommandLineRunner {
 
     private final ObjectMapper objectMapper;
 
-    private final Map<Socket, String> socketMap;
+    private final Map<Socket, Optional<String>> socketMap;
 
     private static Map<EventType, EventHandler> eventTypeEventHandlerMap = new HashMap<>();
 
     private static Map<EventType, Class<?>> typeMap = new HashMap<>();
 
-    public SocketService(EventHandlerFactory eventHandlerFactory, ObjectMapper objectMapper, Map<Socket, String> socketMap) {
+    public SocketService(EventHandlerFactory eventHandlerFactory, ObjectMapper objectMapper, Map<Socket, Optional<String>> socketMap) {
         this.eventHandlerFactory = eventHandlerFactory;
         this.objectMapper = objectMapper;
         this.socketMap = socketMap;
@@ -47,9 +44,11 @@ public class SocketService implements CommandLineRunner {
         eventTypeEventHandlerMap.put(EventType.REQUEST_CONNECT_TO_LOBBY, eventHandlerFactory.createHandler(EventType.REQUEST_CONNECT_TO_LOBBY));
         eventTypeEventHandlerMap.put(EventType.REQUEST_DISCONNECT_FROM_LOBBY, eventHandlerFactory.createHandler(EventType.REQUEST_DISCONNECT_FROM_LOBBY));
         eventTypeEventHandlerMap.put(EventType.REQUEST_START_GAME, eventHandlerFactory.createHandler(EventType.REQUEST_START_GAME));
+        // todo: add game_event
 
         typeMap.put(EventType.REQUEST_CONNECT_TO_LOBBY, SocketRequestConnectToLobbyPayload.class);
         typeMap.put(EventType.REQUEST_START_GAME, SocketRequestStartGamePayload.class);
+        // todo: add game_event
     }
 
     @Override
@@ -71,42 +70,45 @@ public class SocketService implements CommandLineRunner {
 
     private void connectClient(ServerSocket serverSocket) throws IOException {
         Socket clientSocket = serverSocket.accept();
-        socketMap.put(clientSocket, "");
+        socketMap.put(clientSocket, Optional.empty());
         log.info("Client connected.");
-        new Thread(() -> {
-            handleClient(clientSocket);
-        }).start();
+        new Thread(() -> handleClient(clientSocket)).start();
     }
 
-    private <T extends SocketMessagePayload> void handleClient(Socket clientSocket) {
+    private  void handleClient(Socket clientSocket) {
         try {
-            byte[] bucket = new byte[1024];
+            byte[] buffer = new byte[4096];
             int num;
-            while ((num = clientSocket.getInputStream().read(bucket)) != -1) {
-                StringBuilder json = new StringBuilder();
-                for (int i = 0; i < num; i++) {
-                    char c = (char) bucket[i];
-                    json.append(c);
-                }
-                if (!json.isEmpty()) {
-                    List<String> queries = Arrays.stream(json.toString().split("/nq")).collect(Collectors.toList());
-                    for (String q : queries) {
-                        SocketMessagePayload socketMessage = objectMapper.readValue(q, SocketMessagePayload.class);
-                        EventType eventType = socketMessage.getEventType();
-                        T message = (T) objectMapper.readValue(q, typeMap.get(eventType));
-                        EventHandler eventHandler = eventTypeEventHandlerMap.get(eventType);
-                        eventHandler.handle(message, clientSocket);
-                    }
-                }
+            while ((num = clientSocket.getInputStream().read(buffer)) != -1) {
+                processIncomingData(clientSocket, buffer, num);
             }
         } catch (IOException e) {
             log.error("Socket is closed.");
         } finally {
+            handleClientDisconnect(clientSocket);
+        }
+    }
+
+    private <T extends SocketMessagePayload> void processIncomingData(Socket clientSocket, byte[] buffer, int num) throws JsonProcessingException {
+        String json = new String(buffer, 0, num);
+        List<String> queries = Arrays.asList(json.split("/nq"));
+        for (String q : queries) {
+            SocketMessagePayload socketMessage = objectMapper.readValue(q, SocketMessagePayload.class);
+            EventType eventType = socketMessage.getEventType();
+            T message = (T) objectMapper.readValue(q, typeMap.get(eventType));
+            EventHandler eventHandler = eventTypeEventHandlerMap.get(eventType);
+            eventHandler.handle(message, clientSocket);
+        }
+    }
+
+    private void handleClientDisconnect(Socket clientSocket) {
+        try {
             DisconnectFromLobbyHandler eventHandler =
                     (DisconnectFromLobbyHandler) eventTypeEventHandlerMap.get(EventType.REQUEST_DISCONNECT_FROM_LOBBY);
             eventHandler.handle(null, clientSocket);
+        } finally {
             socketMap.remove(clientSocket);
+            log.info("Client disconnected: {}", clientSocket.getRemoteSocketAddress());
         }
-        log.info("Client disconnected.");
     }
 }
