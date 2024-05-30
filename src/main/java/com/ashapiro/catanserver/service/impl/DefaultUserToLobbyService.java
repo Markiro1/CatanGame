@@ -5,15 +5,11 @@ import com.ashapiro.catanserver.entity.User;
 import com.ashapiro.catanserver.entity.UserToLobby;
 import com.ashapiro.catanserver.repository.LobbyRepository;
 import com.ashapiro.catanserver.repository.UserToLobbyRepository;
-import com.ashapiro.catanserver.service.LobbyService;
 import com.ashapiro.catanserver.service.UserToLobbyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -58,5 +54,10 @@ public class DefaultUserToLobbyService implements UserToLobbyService {
                 lobbyRepository.delete(lobby);
             }
         }
+    }
+
+    @Override
+    public Long findLobbyIdByToken(String token) {
+        return userToLobbyRepository.findLobbyIdByUserToken(token);
     }
 }
