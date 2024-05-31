@@ -3,7 +3,7 @@ package com.ashapiro.catanserver.controller;
 import com.ashapiro.catanserver.dto.lobby.AllLobbyDto;
 import com.ashapiro.catanserver.dto.lobby.CreateLobbyRequestDto;
 import com.ashapiro.catanserver.dto.lobby.CreateLobbyResponseDto;
-import com.ashapiro.catanserver.dto.lobby.LobbyDetailsDto;
+import com.ashapiro.catanserver.dto.lobby.LobbyDataDTO;
 import com.ashapiro.catanserver.service.LobbyService;
 import com.ashapiro.catanserver.util.TokenManager;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,7 +35,7 @@ public class LobbyController {
     }
 
     @GetMapping("/lobby/details")
-    public ResponseEntity<LobbyDetailsDto> getLobbyDetails(HttpServletRequest request) {
+    public ResponseEntity<LobbyDataDTO> getLobbyDetails(HttpServletRequest request) {
         String token = tokenManager.extractToken(request);
         return ResponseEntity
                 .ok()
