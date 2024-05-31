@@ -11,9 +11,9 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-public class LobbyDetailsDto {
+public class LobbyDataDTO {
 
-    private Long requestUserId;
+    private Long userIdWhoSendRequest;
 
     private Long lobbyId;
 
@@ -21,7 +21,7 @@ public class LobbyDetailsDto {
 
     private List<SimpleUserDto> users = new ArrayList<>();
 
-    public LobbyDetailsDto(Long lobbyId, String lobbyName) {
+    public LobbyDataDTO(Long lobbyId, String lobbyName) {
         this.lobbyId = lobbyId;
         this.lobbyName = lobbyName;
     }
