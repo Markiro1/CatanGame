@@ -1,16 +1,15 @@
 package com.ashapiro.catanserver.service;
 
-import com.ashapiro.catanserver.entity.Lobby;
-import com.ashapiro.catanserver.entity.User;
+import com.ashapiro.catanserver.entity.LobbyEntity;
+import com.ashapiro.catanserver.entity.UserEntity;
 import com.ashapiro.catanserver.entity.UserToLobby;
 
 public interface UserToLobbyService {
 
-    UserToLobby createSession(User user, Lobby lobby);
+    UserToLobby createSession(UserEntity userEntity, LobbyEntity lobbyEntity);
 
     void deleteByUserId(Long userId);
 
-    void removeUserFromLobby(User user);
+    void removeUserFromLobby(UserEntity userEntity);
 
-    Long findLobbyIdByToken(String token);
 }
