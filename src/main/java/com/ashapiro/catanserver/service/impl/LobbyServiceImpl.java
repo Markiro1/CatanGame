@@ -3,18 +3,15 @@ package com.ashapiro.catanserver.service.impl;
 import com.ashapiro.catanserver.dto.lobby.AllLobbyDto;
 import com.ashapiro.catanserver.dto.lobby.CreateLobbyRequestDto;
 import com.ashapiro.catanserver.dto.lobby.CreateLobbyResponseDto;
-import com.ashapiro.catanserver.dto.lobby.LobbyDetailsDto;
-import com.ashapiro.catanserver.dto.user.SimpleUserDto;
-import com.ashapiro.catanserver.entity.Lobby;
-import com.ashapiro.catanserver.entity.User;
+import com.ashapiro.catanserver.dto.lobby.LobbyDataDTO;
+import com.ashapiro.catanserver.entity.LobbyEntity;
+import com.ashapiro.catanserver.entity.UserEntity;
 import com.ashapiro.catanserver.entity.UserToLobby;
-import com.ashapiro.catanserver.enums.EventType;
 import com.ashapiro.catanserver.repository.CustomLobbyRepository;
 import com.ashapiro.catanserver.repository.LobbyRepository;
 import com.ashapiro.catanserver.repository.UserRepository;
 import com.ashapiro.catanserver.service.LobbyService;
 import com.ashapiro.catanserver.service.UserToLobbyService;
-import com.ashapiro.catanserver.util.LobbyUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +26,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Slf4j
-public class DefaultLobbyService implements LobbyService {
+public class LobbyServiceImpl implements LobbyService {
 
     private final LobbyRepository lobbyRepository;
 
@@ -39,14 +36,12 @@ public class DefaultLobbyService implements LobbyService {
 
     private final UserToLobbyService userToLobbyService;
 
-    private final LobbyUtils lobbyUtils;
-
     @Transactional
     @Override
     public void joinToLobby(Long lobbyId, String token) {
-        User user = userRepository.findUserByToken(token)
+        UserEntity user = userRepository.findUserByToken(token)
                 .orElseThrow(() -> new NoSuchElementException("User does not exist with token: " + token));
-        Lobby lobby = lobbyRepository.findLobbyByIdFetchUserToLobby(lobbyId)
+        LobbyEntity lobby = lobbyRepository.findLobbyByIdFetchUserToLobby(lobbyId)
                 .orElseThrow(() -> new NoSuchElementException("Lobby not found with id: " + lobbyId));
         userToLobbyService.createSession(user, lobby);
     }
@@ -55,7 +50,7 @@ public class DefaultLobbyService implements LobbyService {
     @Override
     public CreateLobbyResponseDto createLobby(CreateLobbyRequestDto request) {
         String lobbyName = request.lobbyName();
-        Lobby lobby = new Lobby();
+        LobbyEntity lobby = new LobbyEntity();
         lobby.setName(lobbyName);
         lobbyRepository.save(lobby);
         return new CreateLobbyResponseDto(lobby.getId());
@@ -63,8 +58,8 @@ public class DefaultLobbyService implements LobbyService {
 
     @Transactional
     @Override
-    public Optional<Lobby> removeUserFromLobby(User user) {
-        Lobby lobby = lobbyRepository.findLobbyByUser(user)
+    public Optional<LobbyEntity> removeUserFromLobby(UserEntity user) {
+        LobbyEntity lobby = lobbyRepository.findLobbyByUser(user)
                 .orElseThrow(() -> new NoSuchElementException("Lobby not found by user: " + user));
         userToLobbyService.deleteByUserId(user.getId());
         lobby.removeByUser(user);
@@ -75,8 +70,6 @@ public class DefaultLobbyService implements LobbyService {
             if (iterator.hasNext()) {
                 UserToLobby userToLobby = iterator.next();
                 userToLobby.setIsHost(true);
-                SimpleUserDto disconnectedUser = new SimpleUserDto(userToLobby.getUser().getId(), userToLobby.getUser().getUsername());
-                lobbyUtils.sendMessageToAllUsersInLobby(lobby.getAllTokenUsersInLobby(), disconnectedUser, EventType.BROADCAST_NEW_HOST_IN_LOBBY);
             }
         }
         return Optional.of(lobby);
@@ -88,7 +81,7 @@ public class DefaultLobbyService implements LobbyService {
     }
 
     @Override
-    public LobbyDetailsDto extractLobbyDetails(String token) {
+    public LobbyDataDTO extractLobbyDetails(String token) {
         return customLobbyRepository.getLobbyDetailsByUserToken(token);
     }
 }
