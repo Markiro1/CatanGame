@@ -1,4 +1,4 @@
-package com.ashapiro.catanserver.socketPayload;
+package com.ashapiro.catanserver.socketServer.payload;
 
 import com.ashapiro.catanserver.enums.EventType;
 import lombok.AllArgsConstructor;

@@ -1,6 +1,6 @@
-package com.ashapiro.catanserver.socketPayload.login;
+package com.ashapiro.catanserver.socketServer.payload.request;
 
-import com.ashapiro.catanserver.socketPayload.SocketMessagePayload;
+import com.ashapiro.catanserver.socketServer.payload.SocketMessagePayload;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -1,7 +1,6 @@
-package com.ashapiro.catanserver.socketPayload.lobby;
+package com.ashapiro.catanserver.socketServer.payload.response;
 
-import com.ashapiro.catanserver.socketPayload.SocketMessagePayload;
-import com.ashapiro.catanserver.enums.EventType;
+import com.ashapiro.catanserver.socketServer.payload.SocketMessagePayload;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
