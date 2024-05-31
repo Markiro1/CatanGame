@@ -15,6 +15,8 @@ public class Player {
 
     private Long id;
 
+    private String name;
+
     private Boolean isReady;
 
     private Socket socket;
