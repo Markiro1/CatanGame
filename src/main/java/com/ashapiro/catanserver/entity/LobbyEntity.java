@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @Getter @Setter
 @ToString
-public class Lobby {
+public class LobbyEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,15 +27,15 @@ public class Lobby {
     @OneToMany(mappedBy = "lobby", cascade = CascadeType.ALL)
     private Set<UserToLobby> usersToLobby = new HashSet<>();
 
-    public void removeByUser(User user) {
-        usersToLobby.remove(user.getUserToLobby());
-        user.setUserToLobby(null);
+    public void removeByUser(UserEntity userEntity) {
+        usersToLobby.remove(userEntity.getUserToLobby());
+        userEntity.setUserToLobby(null);
     }
 
     public List<String> getAllTokenUsersInLobby() {
         return usersToLobby.stream()
                 .map(UserToLobby::getUser)
-                .map(User::getToken)
+                .map(UserEntity::getToken)
                 .collect(Collectors.toList());
     }
 }
