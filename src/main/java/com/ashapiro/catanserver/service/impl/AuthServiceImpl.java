@@ -4,12 +4,12 @@ import com.ashapiro.catanserver.dto.auth.LoginDto;
 import com.ashapiro.catanserver.dto.auth.RegisterDto;
 import com.ashapiro.catanserver.dto.jwt.JwtResponseDto;
 import com.ashapiro.catanserver.dto.user.SimpleUserDto;
-import com.ashapiro.catanserver.entity.User;
+import com.ashapiro.catanserver.entity.UserEntity;
 import com.ashapiro.catanserver.service.AuthService;
 import com.ashapiro.catanserver.service.UserService;
+import com.ashapiro.catanserver.socketServer.SocketService;
 import com.ashapiro.catanserver.userDetails.UserDetailsImpl;
 import com.ashapiro.catanserver.util.JwtUtils;
-import com.ashapiro.catanserver.util.LobbyUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional(readOnly = true)
-public class DefaultAuthService implements AuthService {
+public class AuthServiceImpl implements AuthService {
 
     private final JwtUtils jwtUtils;
 
@@ -33,7 +33,7 @@ public class DefaultAuthService implements AuthService {
 
     private final AuthenticationManager authenticationManager;
 
-    private final LobbyUtils lobbyUtils;
+    private final SocketService socketService;
 
     private final ModelMapper modelMapper;
 
@@ -50,8 +50,8 @@ public class DefaultAuthService implements AuthService {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(requestDto.login(), requestDto.password())
             );
-            User user = modelMapper.map(authentication.getPrincipal(), User.class);
-            lobbyUtils.removeUserFromLobbyIfPresent(user);
+            UserEntity userEntity = modelMapper.map(authentication.getPrincipal(), UserEntity.class);
+            socketService.removeUserFromLobbyIfPresent(userEntity.getToken());
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String newToken = jwtUtils.generateToken((UserDetailsImpl) userDetails);
             jwtUtils.updateUserTokenByLogin(requestDto.login(), newToken);
