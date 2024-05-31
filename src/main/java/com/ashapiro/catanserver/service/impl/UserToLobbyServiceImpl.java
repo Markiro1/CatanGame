@@ -55,9 +55,4 @@ public class UserToLobbyServiceImpl implements UserToLobbyService {
             }
         }
     }
-
-    @Override
-    public Long findLobbyIdByToken(String token) {
-        return userToLobbyRepository.findLobbyIdByUserToken(token);
-    }
 }
