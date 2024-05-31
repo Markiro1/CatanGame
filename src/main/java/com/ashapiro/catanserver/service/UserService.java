@@ -2,7 +2,7 @@ package com.ashapiro.catanserver.service;
 
 import com.ashapiro.catanserver.dto.auth.RegisterDto;
 import com.ashapiro.catanserver.dto.user.SimpleUserDto;
-import com.ashapiro.catanserver.entity.User;
+import com.ashapiro.catanserver.entity.UserEntity;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -14,10 +14,10 @@ public interface UserService {
 
     void updateUserTokenByLogin(String login, String token);
 
-    @Query("select u from User u left join fetch u.userToLobby")
-    Optional<User> findUserByLogin(String login);
+    @Query("select u from UserEntity u left join fetch u.userToLobby")
+    Optional<UserEntity> findUserByLogin(String login);
 
-    Optional<User> findUserByToken(String token);
+    Optional<UserEntity> findUserByToken(String token);
 
     List<String> retrieveTokensByLobbyId(Long lobbyId);
 

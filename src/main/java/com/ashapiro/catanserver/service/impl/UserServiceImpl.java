@@ -1,13 +1,12 @@
 package com.ashapiro.catanserver.service.impl;
 
-import com.ashapiro.catanserver.dto.user.SimpleUserDto;
-import com.ashapiro.catanserver.service.UserService;
 import com.ashapiro.catanserver.dto.auth.RegisterDto;
-import com.ashapiro.catanserver.entity.User;
+import com.ashapiro.catanserver.dto.user.SimpleUserDto;
+import com.ashapiro.catanserver.entity.UserEntity;
 import com.ashapiro.catanserver.repository.UserRepository;
+import com.ashapiro.catanserver.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class DefaultUserService implements UserService {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
 
@@ -32,7 +31,7 @@ public class DefaultUserService implements UserService {
     @Override
     public SimpleUserDto save(RegisterDto registerDto) {
         validateLogin(registerDto.getLogin());
-        User user = createUserFromRequest(registerDto);
+        UserEntity user = createUserFromRequest(registerDto);
         userRepository.save(user);
         return new SimpleUserDto(user.getId(), user.getUsername());
     }
@@ -40,18 +39,18 @@ public class DefaultUserService implements UserService {
     @Transactional
     @Override
     public void updateUserTokenByLogin(String login, String token) {
-        User user = userRepository.findUserByLogin(login)
+        UserEntity user = userRepository.findUserByLogin(login)
                 .orElseThrow(() -> new UsernameNotFoundException(login));
         user.setToken(token);
     }
 
     @Override
-    public Optional<User> findUserByLogin(String login) {
+    public Optional<UserEntity> findUserByLogin(String login) {
         return userRepository.findUserByLogin(login);
     }
 
     @Override
-    public Optional<User> findUserByToken(String token) {
+    public Optional<UserEntity> findUserByToken(String token) {
         return userRepository.findUserByToken(token);
     }
 
@@ -65,15 +64,15 @@ public class DefaultUserService implements UserService {
         return userRepository.findSimpleUserByToken(token);
     }
 
-    private User createUserFromRequest(RegisterDto registerDto) {
-        User user = convertToUserFromRequest(registerDto);
+    private UserEntity createUserFromRequest(RegisterDto registerDto) {
+        UserEntity user = convertToUserFromRequest(registerDto);
         String encodedPassword = passwordEncoder.encode(registerDto.getPassword());
         user.setPassword(encodedPassword);
         return user;
     }
 
-    private User convertToUserFromRequest(RegisterDto registerDto) {
-        return modelMapper.map(registerDto, User.class);
+    private UserEntity convertToUserFromRequest(RegisterDto registerDto) {
+        return modelMapper.map(registerDto, UserEntity.class);
     }
 
     private void validateLogin(String login) {
