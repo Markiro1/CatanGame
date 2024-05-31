@@ -17,11 +17,11 @@ public class UserToLobby {
     @MapsId
     @OneToOne(optional = false)
     @JoinColumn(name = "user_id")
-    private User user;
+    private UserEntity user;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "lobby_id")
-    private Lobby lobby;
+    private LobbyEntity lobby;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -30,7 +30,7 @@ public class UserToLobby {
     @Column(name = "is_host")
     private Boolean isHost;
 
-    public void addUserAndLobby(User user, Lobby lobby) {
+    public void addUserAndLobby(UserEntity user, LobbyEntity lobby) {
         user.setUserToLobby(this);
         lobby.getUsersToLobby().add(this);
         this.user = user;
