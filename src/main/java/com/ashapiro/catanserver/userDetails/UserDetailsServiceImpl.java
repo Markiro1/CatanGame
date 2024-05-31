@@ -1,6 +1,6 @@
 package com.ashapiro.catanserver.userDetails;
 
-import com.ashapiro.catanserver.entity.User;
+import com.ashapiro.catanserver.entity.UserEntity;
 import com.ashapiro.catanserver.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,14 +19,14 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String login) throws UsernameNotFoundException {
         log.info("loadUserByUsername(): Loading user by username...");
-        User user = userRepository.findUserByLogin(login)
+        UserEntity userEntity = userRepository.findUserByLogin(login)
                 .orElseThrow(() -> new UsernameNotFoundException(login));
         return new UserDetailsImpl(
-                user.getId(),
-                user.getToken(),
-                user.getLogin(),
-                user.getPassword(),
-                user.getUsername()
+                userEntity.getId(),
+                userEntity.getToken(),
+                userEntity.getLogin(),
+                userEntity.getPassword(),
+                userEntity.getUsername()
         );
     }
 }
