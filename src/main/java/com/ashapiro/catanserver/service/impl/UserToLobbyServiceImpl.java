@@ -1,7 +1,7 @@
 package com.ashapiro.catanserver.service.impl;
 
-import com.ashapiro.catanserver.entity.Lobby;
-import com.ashapiro.catanserver.entity.User;
+import com.ashapiro.catanserver.entity.LobbyEntity;
+import com.ashapiro.catanserver.entity.UserEntity;
 import com.ashapiro.catanserver.entity.UserToLobby;
 import com.ashapiro.catanserver.repository.LobbyRepository;
 import com.ashapiro.catanserver.repository.UserToLobbyRepository;
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Slf4j
-public class DefaultUserToLobbyService implements UserToLobbyService {
+public class UserToLobbyServiceImpl implements UserToLobbyService {
 
     private final UserToLobbyRepository userToLobbyRepository;
 
@@ -23,7 +23,7 @@ public class DefaultUserToLobbyService implements UserToLobbyService {
 
     @Transactional
     @Override
-    public UserToLobby createSession(User user, Lobby lobby) {
+    public UserToLobby createSession(UserEntity user, LobbyEntity lobby) {
         UserToLobby userToLobby = new UserToLobby();
         userToLobby.addUserAndLobby(user, lobby);
         userToLobby.setStatus(UserToLobby.ConnectionStatus.CONNECTION_WAITING);
@@ -39,7 +39,7 @@ public class DefaultUserToLobbyService implements UserToLobbyService {
 
     @Transactional
     @Override
-    public void removeUserFromLobby(User user) {
+    public void removeUserFromLobby(UserEntity user) {
         UserToLobby userToLobby = user.getUserToLobby();
         if (userToLobby != null) {
             user
@@ -49,7 +49,7 @@ public class DefaultUserToLobbyService implements UserToLobbyService {
 
             userToLobbyRepository.delete(userToLobby);
 
-            Lobby lobby = userToLobby.getLobby();
+            LobbyEntity lobby = userToLobby.getLobby();
             if (lobby.getUsersToLobby().isEmpty()) {
                 lobbyRepository.delete(lobby);
             }
