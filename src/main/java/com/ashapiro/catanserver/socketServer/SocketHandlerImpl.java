@@ -1,7 +1,6 @@
 package com.ashapiro.catanserver.socketServer;
 
 import com.ashapiro.catanserver.socketServer.payload.SocketMessagePayload;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,8 +14,6 @@ import java.net.Socket;
 public class SocketHandlerImpl implements SocketHandler{
 
     private final SocketServiceImpl socketService;
-
-    private final ObjectMapper objectMapper;
 
     @Override
     public void onConnection(Socket clientSocket) {
@@ -38,9 +35,10 @@ public class SocketHandlerImpl implements SocketHandler{
     @Override
     public <T extends SocketMessagePayload> void onMessage(Socket clientSocket, T message) {
         switch (message.getEventType()) {
-            case REQUEST_CONNECT_TO_LOBBY -> socketService.connectToLobby(clientSocket, message);
+            case REQUEST_CONNECT -> socketService.connectToLobby(clientSocket, message);
             case REQUEST_START_GAME -> socketService.startGame(clientSocket, message);
-            case REQUEST_READY_AND_LOAD -> socketService.updatePlayerReadyStatus(clientSocket);
+            case REQUEST_READY_AND_LOAD -> socketService.updateUserReadyStatus(clientSocket);
+            case REQUEST_BUILD_HOUSE -> socketService.buildHouse(clientSocket, message);
         }
     }
 }
