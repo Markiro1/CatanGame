@@ -1,6 +1,5 @@
 package com.ashapiro.catanserver.game;
 
-import com.ashapiro.catanserver.game.dto.HexDto;
 import com.ashapiro.catanserver.game.enums.EdgeDirection;
 import com.ashapiro.catanserver.game.enums.HexType;
 import com.ashapiro.catanserver.game.enums.VertexDirection;
@@ -11,10 +10,8 @@ import com.ashapiro.catanserver.game.model.Coordinates;
 import com.ashapiro.catanserver.game.model.Edge;
 import com.ashapiro.catanserver.game.model.Hex;
 import com.ashapiro.catanserver.game.model.Vertex;
-import org.modelmapper.ModelMapper;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class MapGenerator {
 
@@ -294,13 +291,6 @@ public class MapGenerator {
         return neighborVertexIds;
     }
 
-    public List<HexDto> getHexDtos() {
-        return gameMap.values().stream()
-                .sorted(Comparator.comparing(Hex::getId))
-                .map(this::convertToDto)
-                .collect(Collectors.toList());
-    }
-
     public List<Hex> getHexes() {
         return hexFactory.getHexes();
     }
@@ -311,10 +301,5 @@ public class MapGenerator {
 
     public List<Edge> getEdges() {
         return edgeFactory.getEdges();
-    }
-
-    private HexDto convertToDto(Hex hex) {
-        ModelMapper modelMapper = new ModelMapper();
-        return modelMapper.map(hex, HexDto.class);
     }
 }
