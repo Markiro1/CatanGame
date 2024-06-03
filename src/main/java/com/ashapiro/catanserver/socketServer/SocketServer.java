@@ -60,6 +60,7 @@ public class SocketServer implements CommandLineRunner {
             throws JsonProcessingException {
         String requestJson = new String(buffer, 0, num);
         List<String> queries = Arrays.asList(requestJson.split("/nq"));
+
         for (String query : queries) {
             SocketMessagePayload socketMessage = objectMapper.readValue(query, SocketMessagePayload.class);
             EventType eventType = socketMessage.getEventType();
