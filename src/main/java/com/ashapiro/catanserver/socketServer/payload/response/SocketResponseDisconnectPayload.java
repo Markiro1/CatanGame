@@ -11,6 +11,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Getter @Setter
 @SuperBuilder
-public class SocketResponseDisconnectFromLobbyPayload extends SocketMessagePayload {
+public class SocketResponseDisconnectPayload extends SocketMessagePayload {
     private String token;
 }
