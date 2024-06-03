@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.stream.Collectors;
 
-
 @ControllerAdvice
 public class ExceptionHandlingControllerAdvice {
 
