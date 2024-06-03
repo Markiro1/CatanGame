@@ -11,6 +11,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Getter @Setter
 @SuperBuilder
-public class SocketRequestLoginPayload extends SocketMessagePayload {
+public class SocketRequestConnectPayload extends SocketMessagePayload {
     private String token;
 }
