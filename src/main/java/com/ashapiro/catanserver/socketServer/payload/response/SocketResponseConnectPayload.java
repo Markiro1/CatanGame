@@ -11,6 +11,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Getter @Setter
 @SuperBuilder
-public class SocketResponseConnectToLobbyPayload extends SocketMessagePayload {
+public class SocketResponseConnectPayload extends SocketMessagePayload {
     private String message;
 }
