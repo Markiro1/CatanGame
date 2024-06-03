@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @AllArgsConstructor
 @Getter @Setter
-public class CreateLobbyResponseDto {
+public class CreateLobbyResponseDTO {
 
     private Long lobbyId;
 }

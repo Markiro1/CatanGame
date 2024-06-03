@@ -1,6 +1,6 @@
 package com.ashapiro.catanserver.dto.lobby;
 
-import com.ashapiro.catanserver.dto.user.SimpleUserDto;
+import com.ashapiro.catanserver.dto.user.SimpleUserDTO;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,7 +19,7 @@ public class LobbyDataDTO {
 
     private String lobbyName;
 
-    private List<SimpleUserDto> users = new ArrayList<>();
+    private List<SimpleUserDTO> users = new ArrayList<>();
 
     public LobbyDataDTO(Long lobbyId, String lobbyName) {
         this.lobbyId = lobbyId;

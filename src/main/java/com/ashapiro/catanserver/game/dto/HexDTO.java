@@ -6,7 +6,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter @Setter
-public class HexDto {
+public class HexDTO {
     private Integer id;
     private HexType hexType;
     private Integer numberToken;

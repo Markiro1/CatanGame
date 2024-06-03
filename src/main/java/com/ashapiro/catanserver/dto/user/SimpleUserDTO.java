@@ -7,7 +7,7 @@ import lombok.*;
 @AllArgsConstructor
 @Getter @Setter
 @ToString
-public class SimpleUserDto{
+public class SimpleUserDTO {
     private Long id;
 
     @JsonIgnore
@@ -17,12 +17,12 @@ public class SimpleUserDto{
 
     private boolean isHost;
 
-    public SimpleUserDto(Long id, String name) {
+    public SimpleUserDTO(Long id, String name) {
         this.id = id;
         this.name = name;
     }
 
-    public SimpleUserDto(Long id, String name, boolean isHost) {
+    public SimpleUserDTO(Long id, String name, boolean isHost) {
         this.id = id;
         this.name = name;
         this.isHost = isHost;
