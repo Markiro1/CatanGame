@@ -7,5 +7,4 @@ public interface UserToLobbyRepository extends JpaRepository<UserToLobby, Long> 
 
     void deleteByUserId(Long userId);
 
-    Long findLobbyIdByUserToken(String token);
 }
