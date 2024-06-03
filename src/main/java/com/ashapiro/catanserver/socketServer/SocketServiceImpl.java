@@ -1,21 +1,24 @@
 package com.ashapiro.catanserver.socketServer;
 
-import com.ashapiro.catanserver.dto.user.SimpleUserDto;
+import com.ashapiro.catanserver.dto.user.SimpleUserDTO;
 import com.ashapiro.catanserver.entity.LobbyEntity;
 import com.ashapiro.catanserver.entity.UserEntity;
 import com.ashapiro.catanserver.entity.UserToLobby;
 import com.ashapiro.catanserver.enums.EventType;
-import com.ashapiro.catanserver.game.dto.HexDto;
-import com.ashapiro.catanserver.game.model.Player;
+import com.ashapiro.catanserver.game.dto.HexDTO;
+import com.ashapiro.catanserver.game.model.User;
 import com.ashapiro.catanserver.service.LobbyService;
 import com.ashapiro.catanserver.service.UserService;
 import com.ashapiro.catanserver.service.UserToLobbyService;
+import com.ashapiro.catanserver.socketServer.dto.UserDTO;
 import com.ashapiro.catanserver.socketServer.payload.SocketMessagePayload;
 import com.ashapiro.catanserver.socketServer.payload.broadcast.*;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestConnectToLobbyPayload;
+import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestBuildHousePayload;
+import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestConnectPayload;
 import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestStartGamePayload;
 import com.ashapiro.catanserver.socketServer.util.Lobby;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,10 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -45,99 +45,49 @@ public class SocketServiceImpl implements SocketService {
 
     private final ObjectMapper objectMapper;
 
+    private Map<EventType, Object> messages;
+
+    @PostConstruct
+    public void init() {
+        messages = new HashMap<>();
+        messages.put(EventType.REQUEST_CONNECT, new SocketRequestConnectPayload());
+        messages.put(EventType.REQUEST_START_GAME, new SocketRequestStartGamePayload());
+        messages.put(EventType.REQUEST_BUILD_HOUSE, new SocketRequestBuildHousePayload());
+    }
+
     @Transactional
     @Override
     public <T extends SocketMessagePayload> void connectToLobby(Socket clientSocket, T message) {
-        if (message instanceof SocketRequestConnectToLobbyPayload) {
-            SocketRequestConnectToLobbyPayload requestMessage = (SocketRequestConnectToLobbyPayload) message;
-            String token = requestMessage.getToken();
+        SocketRequestConnectPayload socketMessage = (SocketRequestConnectPayload) messages.get(message.getEventType());
+        String token = socketMessage.getToken();
 
-            UserEntity userEntity = userService.findUserByToken(token)
-                    .orElseThrow(() -> new NoSuchElementException("User not found with token: " + token));
-            LobbyEntity lobbyEntity = userEntity.getUserToLobby().getLobby();
+        UserEntity userEntity = userService.findUserEntityByToken(token)
+                .orElseThrow(() -> new NoSuchElementException("User not found with token: " + token));
+        LobbyEntity lobbyEntity = userEntity.getUserToLobby().getLobby();
+        SocketInfo socketInfo = findSocketInfo(clientSocket);
+        User user = new User(userEntity.getId(), userEntity.getUsername(), false, clientSocket);
 
-            SocketInfo socketInfo = socketInfos.stream()
-                    .filter(si -> si.getSocket().equals(clientSocket))
-                    .findFirst()
-                    .orElseThrow(() -> new NoSuchElementException("Socket not found"));
-
-            Player player = new Player(userEntity.getId(), userEntity.getUsername(), false, clientSocket);
-
-            socketInfos.stream()
-                    .forEach(si -> {
-                        Lobby lobby = si.getLobby();
-                        if (lobby == null || !lobby.getId().equals(lobbyEntity.getId())) {
-                            lobby = new Lobby(lobbyEntity.getId());
-                        }
-                        lobby.getPlayerMap().put(clientSocket, player);
-                        socketInfo.setLobby(lobby);
-                    });
-
-            socketInfo.setToken(token);
-            socketInfos.stream()
-                    .filter(si -> {
-                        Lobby lobby = si.getLobby();
-                        return lobby != null && lobby.getId().equals(lobbyEntity.getId());
-                    })
-                    .forEach(si -> {
-                        Lobby lobby = si.getLobby();
-                        lobby.getPlayerMap().put(clientSocket, player);
-                        socketInfo.setLobby(lobby);
-
-                        sendBroadcastToUsers(
-                                si.getSocket(),
-                                new SimpleUserDto(userEntity.getId(), userEntity.getUsername()),
-                                EventType.BROADCAST_USER_CONNECTION_TO_LOBBY
-                        );
-                    });
-
-            userEntity.getUserToLobby().setStatus(UserToLobby.ConnectionStatus.CONNECTED);
-        }
+        updateLobbyInfo(socketInfo, lobbyEntity, user);
+        socketInfo.setToken(token);
+        broadcastUserConnected(socketInfo, userEntity);
+        userEntity.getUserToLobby().setStatus(UserToLobby.ConnectionStatus.CONNECTED);
     }
 
     @Transactional
     @Override
     public void disconnectFromLobby(Socket clientSocket) {
-        String token = socketInfos.stream()
-                .filter(si -> si.getSocket().equals(clientSocket))
-                .map(SocketInfo::getToken)
-                .collect(Collectors.joining());
+        String token = findTokenBySocket(clientSocket);
         if (!token.isEmpty()) {
             try {
-                UserEntity userEntity = userService.findUserByToken(token)
+                UserEntity userEntity = userService.findUserEntityByToken(token)
                         .orElseThrow(() -> new NoSuchElementException("User not found with token: " + token));
-
-                LobbyEntity lobbyEntity = lobbyService.removeUserFromLobby(userEntity)
+                LobbyEntity lobbyEntity = lobbyService.removeUserEntityFromLobby(userEntity)
                         .orElseThrow(() -> new NoSuchElementException("Lobby not found by user: " + userEntity));
+                SocketInfo socketInfoToRemove = findSocketInfo(clientSocket);
 
-                SocketInfo socketInfo = socketInfos.stream()
-                        .filter(si -> si.getSocket().equals(clientSocket))
-                        .findFirst()
-                        .orElseThrow();
-                socketInfos.remove(socketInfo);
-
-                lobbyEntity.getUsersToLobby().stream()
-                        .findFirst()
-                        .map(UserToLobby::getUser)
-                        .ifPresent(newHostUser -> {
-                            SimpleUserDto newHost = new SimpleUserDto(newHostUser.getId(), newHostUser.getUsername());
-                            socketInfos.forEach(si ->
-                                    sendBroadcastToUsers(si.getSocket(), newHost, EventType.BROADCAST_NEW_HOST_IN_LOBBY));
-                        });
-
-                socketInfos.stream()
-                        .filter(si -> {
-                            Lobby lobby = si.getLobby();
-                            return lobby != null && lobby.getId().equals(lobbyEntity.getId());
-                        })
-                        .forEach(si -> {
-                            sendBroadcastToUsers(
-                                    si.getSocket(),
-                                    new SimpleUserDto(userEntity.getId(), userEntity.getUsername()),
-                                    EventType.BROADCAST_USER_DISCONNECT_FROM_LOBBY
-                            );
-                        });
-
+                removeSocketInfo(socketInfoToRemove);
+                broadcastNewHostIfPresent(lobbyEntity);
+                broadcastUserDisconnected(lobbyEntity, userEntity);
             } catch (NoSuchElementException e) {
                 log.error("Failed to remove user from lobby: " + e.getMessage());
                 e.printStackTrace();
@@ -147,81 +97,194 @@ public class SocketServiceImpl implements SocketService {
 
     @Override
     public void removeUserFromLobbyIfPresent(String token) {
-        UserEntity userEntity = userService.findUserByToken(token)
+        UserEntity userEntity = userService.findUserEntityByToken(token)
                 .orElseThrow(() -> new NoSuchElementException("User not found by token: " + token));
         UserToLobby userToLobby = userEntity.getUserToLobby();
+
         if (userToLobby != null) {
             LobbyEntity lobbyEntity = userToLobby.getLobby();
             List<String> allTokensInLobby = lobbyEntity.getAllTokenUsersInLobby();
-            allTokensInLobby.forEach(t -> {
-                socketInfos.stream()
-                        .filter(socketInfo -> socketInfo.getToken().equals(t))
-                        .forEach(socketInfo -> {
-                            System.out.println(socketInfo.getToken().equals(t));
-                            userToLobbyService.removeUserFromLobby(userEntity);
-                            sendBroadcastToUsers(
-                                    socketInfo.getSocket(),
-                                    new SimpleUserDto(userEntity.getId(), userEntity.getUsername()),
-                                    EventType.BROADCAST_USER_DISCONNECT_FROM_LOBBY
-                            );
-                        });
-            });
+            allTokensInLobby.forEach(t -> removeUserFromLobbyIfTokenMatches(t, userEntity));
         }
     }
 
     @Override
-    public void updatePlayerReadyStatus(Socket clientSocket) {
-        Player player = socketInfos.stream()
-                .filter(socketInfo -> socketInfo.getSocket().equals(clientSocket))
-                .map(socketInfo -> socketInfo.getLobby().getPlayerMap())
-                .flatMap(entry -> entry.entrySet().stream())
-                .map(entry -> entry.getValue())
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Player not found by socket: " + clientSocket.getInetAddress().getHostAddress()));
-        player.setIsReady(true);
+    public void updateUserReadyStatus(Socket clientSocket) {
+        User user = getUserBySocket(clientSocket);
+        user.setIsReady(true);
     }
 
     @Override
     public <T extends SocketMessagePayload> void startGame(Socket clientSocket, T message) {
-        if (message instanceof SocketRequestStartGamePayload) {
-            SocketRequestStartGamePayload socketMessage = (SocketRequestStartGamePayload) message;
-            Lobby lobby = socketInfos.stream()
-                    .filter(socketInfo -> socketInfo.getSocket().equals(clientSocket))
-                    .map(SocketInfo::getLobby)
-                    .findFirst()
-                    .orElseThrow(() -> new NoSuchElementException("Lobby not found by socket: " + clientSocket.getInetAddress().getHostAddress()));
-            List<HexDto> hexes = lobby.startGame(socketMessage.getNumHexesInMapRow());
+        SocketRequestStartGamePayload socketMessage = (SocketRequestStartGamePayload) messages.get(message.getEventType());
+        Lobby lobby = findLobbyBySocket(clientSocket);
 
-            SocketBroadcastStartGamePayload broadcast = new SocketBroadcastStartGamePayload(
-                    EventType.BROADCAST_START_GAME,
-                    socketMessage.getNumHexesInMapRow(),
-                    hexes
-            );
+        List<HexDTO> hexDTOS = lobby.startGame(socketMessage.getNumHexesInMapRow());
+        List<UserDTO> userDTOS = mapUserToUserDTO(lobby);
+        UserDTO currentUserDTO = mapCurrentUserToUserDTO(clientSocket, lobby);
 
-            socketInfos.stream()
-                    .filter(si -> {
-                        Lobby gameLobby = si.getLobby();
-                        return gameLobby != null && gameLobby.getId().equals(lobby.getId());
-                    })
-                    .forEach(si -> {
-                        sendMessage(si.getSocket(), broadcast);
-                    });
+        SocketBroadcastStartGamePayload broadcast = new SocketBroadcastStartGamePayload(
+                EventType.BROADCAST_START_GAME,
+                socketMessage.getNumHexesInMapRow(),
+                hexDTOS,
+                userDTOS,
+                currentUserDTO
+        );
+
+        socketInfos.stream()
+                .filter(si -> {
+                    Lobby gameLobby = si.getLobby();
+                    return gameLobby != null && gameLobby.getId().equals(lobby.getId());
+                })
+                .forEach(si -> {
+                    sendMessage(si.getSocket(), broadcast);
+                });
+    }
+
+
+    @Override
+    public <T extends SocketMessagePayload> void buildHouse(Socket clientSocket, T message) {
+        SocketRequestBuildHousePayload socketMessage = (SocketRequestBuildHousePayload) messages.get(message.getEventType());
+
+        Lobby lobby = socketInfos.stream()
+                .filter(socketInfo -> socketInfo.getSocket().equals(clientSocket))
+                .map(SocketInfo::getLobby)
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Lobby not found by socket: " + clientSocket.getInetAddress().getHostAddress()));
+
+        System.out.println("HELLO GUYS, I HAVE HOUSE ON VERTEX WITH ID: " + socketMessage.getVertexId());
+
+    }
+
+    public List<SocketInfo> getSocketInfos() {
+        return socketInfos;
+    }
+
+    private UserDTO mapCurrentUserToUserDTO(Socket clientSocket, Lobby lobby) {
+        User currentUser = lobby.getUserMap().get(clientSocket);
+        return new UserDTO(currentUser.getId(), currentUser.getName());
+    }
+
+    private List<UserDTO> mapUserToUserDTO(Lobby lobby) {
+        return lobby.getUserMap()
+                .entrySet()
+                .stream()
+                .map(entry -> new UserDTO(entry.getValue().getId(), entry.getValue().getName()))
+                .toList();
+    }
+
+    private Lobby findLobbyBySocket(Socket clientSocket) {
+        return socketInfos.stream()
+                .filter(socketInfo -> socketInfo.getSocket().equals(clientSocket))
+                .map(SocketInfo::getLobby)
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Lobby not found by socket: " + clientSocket.getInetAddress().getHostAddress()));
+    }
+
+    private User getUserBySocket(Socket clientSocket) {
+        return socketInfos.stream()
+                .filter(socketInfo -> socketInfo.getSocket().equals(clientSocket))
+                .map(socketInfo -> socketInfo.getLobby().getUserMap())
+                .flatMap(entry -> entry.entrySet().stream())
+                .filter(entry -> entry.getKey().equals(clientSocket))
+                .map(entry -> entry.getValue())
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Player not found by socket: " + clientSocket.getInetAddress().getHostAddress()));
+    }
+
+    private void removeUserFromLobbyIfTokenMatches(String t, UserEntity userEntity) {
+        socketInfos.stream()
+                .filter(socketInfo -> socketInfo.getToken().equals(t))
+                .forEach(socketInfo -> {
+                    userToLobbyService.removeUserFromLobby(userEntity);
+                    broadcastUserConnected(socketInfo, userEntity);
+                });
+    }
+
+    private void broadcastUserDisconnected(LobbyEntity lobbyEntity, UserEntity userEntity) {
+        socketInfos.stream()
+                .filter(si -> {
+                    Lobby lobby = si.getLobby();
+                    return lobby != null && lobby.getId().equals(lobbyEntity.getId());
+                })
+                .forEach(si -> {
+                    sendBroadcastToUsers(
+                            si.getSocket(),
+                            new SimpleUserDTO(userEntity.getId(), userEntity.getUsername()),
+                            EventType.BROADCAST_USER_DISCONNECTED
+                    );
+                });
+    }
+
+    private void broadcastNewHostIfPresent(LobbyEntity lobbyEntity) {
+        lobbyEntity.getUsersToLobby().stream()
+                .findFirst()
+                .map(UserToLobby::getUser)
+                .ifPresent(newHostUser -> {
+                    SimpleUserDTO newHost = new SimpleUserDTO(newHostUser.getId(), newHostUser.getUsername());
+                    socketInfos.forEach(si ->
+                            sendBroadcastToUsers(si.getSocket(), newHost, EventType.BROADCAST_NEW_HOST));
+                });
+    }
+
+    private void removeSocketInfo(SocketInfo socketInfoToRemove) {
+        socketInfoToRemove.getLobby().getUserMap()
+                .entrySet()
+                .removeIf(entry -> entry.getKey().equals(socketInfoToRemove.getSocket()));
+        socketInfos.remove(socketInfoToRemove);
+    }
+
+    private String findTokenBySocket(Socket clientSocket) {
+        return socketInfos.stream()
+                .filter(si -> si.getSocket().equals(clientSocket))
+                .map(SocketInfo::getToken)
+                .findFirst()
+                .orElse("");
+    }
+
+    private void broadcastUserConnected(SocketInfo socketInfo, UserEntity userEntity) {
+        for (SocketInfo si : socketInfos) {
+            Lobby lobby = si.getLobby();
+            if (lobby != null && lobby.getId().equals(socketInfo.getLobby().getId())) {
+                User user = new User(userEntity.getId(), userEntity.getUsername(), false, socketInfo.getSocket());
+                lobby.getUserMap().put(socketInfo.getSocket(), user);
+                socketInfo.setLobby(lobby);
+                sendBroadcastToUsers(si.getSocket(), new SimpleUserDTO(user.getId(), user.getName()), EventType.BROADCAST_USER_CONNECTED);
+            }
         }
     }
 
-    private void sendBroadcastToUsers(Socket socket, SimpleUserDto user, EventType eventType) {
+    private void updateLobbyInfo(SocketInfo socketInfo, LobbyEntity lobbyEntity, User user) {
+        for (SocketInfo si : socketInfos) {
+            Lobby lobby = si.getLobby();
+            if (lobby == null || !lobby.getId().equals(lobbyEntity.getId())) {
+                lobby = new Lobby(lobbyEntity.getId());
+            }
+            lobby.getUserMap().put(socketInfo.getSocket(), user);
+            socketInfo.setLobby(lobby);
+        }
+    }
+
+    private SocketInfo findSocketInfo(Socket clientSocket) {
+        return socketInfos.stream()
+                .filter(socketInfo -> socketInfo.getSocket().equals(clientSocket))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Socket not found by socket: " + clientSocket));
+    }
+
+    private void sendBroadcastToUsers(Socket socket, SimpleUserDTO user, EventType eventType) {
         StringBuilder message = new StringBuilder();
         SocketBroadcastPayload broadcast = null;
         switch (eventType) {
-            case BROADCAST_USER_CONNECTION_TO_LOBBY -> {
+            case BROADCAST_USER_CONNECTED -> {
                 message.append(String.format("%s connected", user.getName()));
                 broadcast = new SocketBroadcastConnectToLobbyPayload(eventType, message.toString(), user);
             }
-            case BROADCAST_USER_DISCONNECT_FROM_LOBBY -> {
+            case BROADCAST_USER_DISCONNECTED -> {
                 message.append(String.format("%s disconnected", user.getName()));
                 broadcast = new SocketBroadcastDisconnectFromLobbyPayload(eventType, message.toString(), user);
             }
-            case BROADCAST_NEW_HOST_IN_LOBBY -> {
+            case BROADCAST_NEW_HOST -> {
                 message.append(String.format("%s is new host", user.getName()));
                 broadcast = new SocketBroadcastNewHostPayload(eventType, message.toString(), user);
             }
@@ -239,9 +302,5 @@ public class SocketServiceImpl implements SocketService {
             log.error("Error send message to user: " + e.getMessage());
             e.printStackTrace();
         }
-    }
-
-    public List<SocketInfo> getSocketInfos() {
-        return socketInfos;
     }
 }
