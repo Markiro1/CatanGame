@@ -1,6 +1,6 @@
 package com.ashapiro.catanserver.socketServer.payload.broadcast;
 
-import com.ashapiro.catanserver.dto.user.SimpleUserDto;
+import com.ashapiro.catanserver.dto.user.SimpleUserDTO;
 import com.ashapiro.catanserver.enums.EventType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -14,5 +14,5 @@ public class SocketBroadcastNewHostPayload implements SocketBroadcastPayload {
 
     private String message;
 
-    private SimpleUserDto hostUser;
+    private SimpleUserDTO hostUser;
 }

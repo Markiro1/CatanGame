@@ -1,7 +1,7 @@
 package com.ashapiro.catanserver.socketServer.payload.broadcast;
 
 import com.ashapiro.catanserver.enums.EventType;
-import com.ashapiro.catanserver.socketServer.dto.PlayerDto;
+import com.ashapiro.catanserver.socketServer.dto.UserDTO;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class SocketBroadcastUserReadyAndLoadPayload implements SocketBroadcastPayload{
     private EventType eventType;
 
-    private PlayerDto playerDto;
+    private UserDTO userDto;
 
     private String message;
 }
