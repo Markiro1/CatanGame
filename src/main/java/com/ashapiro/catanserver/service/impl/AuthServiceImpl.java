@@ -1,9 +1,9 @@
 package com.ashapiro.catanserver.service.impl;
 
-import com.ashapiro.catanserver.dto.auth.LoginDto;
-import com.ashapiro.catanserver.dto.auth.RegisterDto;
-import com.ashapiro.catanserver.dto.jwt.JwtResponseDto;
-import com.ashapiro.catanserver.dto.user.SimpleUserDto;
+import com.ashapiro.catanserver.dto.auth.LoginDTO;
+import com.ashapiro.catanserver.dto.auth.RegisterDTO;
+import com.ashapiro.catanserver.dto.jwt.JwtResponseDTO;
+import com.ashapiro.catanserver.dto.user.SimpleUserDTO;
 import com.ashapiro.catanserver.entity.UserEntity;
 import com.ashapiro.catanserver.service.AuthService;
 import com.ashapiro.catanserver.service.UserService;
@@ -38,13 +38,13 @@ public class AuthServiceImpl implements AuthService {
     private final ModelMapper modelMapper;
 
     @Override
-    public SimpleUserDto register(RegisterDto registerDto) {
+    public SimpleUserDTO register(RegisterDTO registerDto) {
         return userService.save(registerDto);
     }
 
     @Transactional
     @Override
-    public JwtResponseDto createAuthToken(LoginDto requestDto) {
+    public JwtResponseDTO createAuthToken(LoginDTO requestDto) {
 
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -55,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String newToken = jwtUtils.generateToken((UserDetailsImpl) userDetails);
             jwtUtils.updateUserTokenByLogin(requestDto.login(), newToken);
-            return new JwtResponseDto(newToken);
+            return new JwtResponseDTO(newToken);
         } catch (BadCredentialsException e) {
             throw e;
         }

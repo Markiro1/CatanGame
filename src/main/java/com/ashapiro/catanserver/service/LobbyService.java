@@ -1,8 +1,8 @@
 package com.ashapiro.catanserver.service;
 
-import com.ashapiro.catanserver.dto.lobby.AllLobbyDto;
-import com.ashapiro.catanserver.dto.lobby.CreateLobbyRequestDto;
-import com.ashapiro.catanserver.dto.lobby.CreateLobbyResponseDto;
+import com.ashapiro.catanserver.dto.lobby.AllLobbyDTO;
+import com.ashapiro.catanserver.dto.lobby.CreateLobbyRequestDTO;
+import com.ashapiro.catanserver.dto.lobby.CreateLobbyResponseDTO;
 import com.ashapiro.catanserver.dto.lobby.LobbyDataDTO;
 import com.ashapiro.catanserver.entity.LobbyEntity;
 import com.ashapiro.catanserver.entity.UserEntity;
@@ -12,13 +12,13 @@ import java.util.Optional;
 
 public interface LobbyService {
 
-    CreateLobbyResponseDto createLobby(CreateLobbyRequestDto request);
+    CreateLobbyResponseDTO createLobby(CreateLobbyRequestDTO request);
 
-    List<AllLobbyDto> getAllLobbies();
+    List<AllLobbyDTO> getAllLobbies();
 
     void joinToLobby(Long lobbyId, String token);
 
-    Optional<LobbyEntity> removeUserFromLobby(UserEntity userEntity);
+    Optional<LobbyEntity> removeUserEntityFromLobby(UserEntity userEntity);
 
     LobbyDataDTO extractLobbyDetails(String token);
 

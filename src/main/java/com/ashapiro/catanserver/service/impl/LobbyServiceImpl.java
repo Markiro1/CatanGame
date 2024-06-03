@@ -1,8 +1,8 @@
 package com.ashapiro.catanserver.service.impl;
 
-import com.ashapiro.catanserver.dto.lobby.AllLobbyDto;
-import com.ashapiro.catanserver.dto.lobby.CreateLobbyRequestDto;
-import com.ashapiro.catanserver.dto.lobby.CreateLobbyResponseDto;
+import com.ashapiro.catanserver.dto.lobby.AllLobbyDTO;
+import com.ashapiro.catanserver.dto.lobby.CreateLobbyRequestDTO;
+import com.ashapiro.catanserver.dto.lobby.CreateLobbyResponseDTO;
 import com.ashapiro.catanserver.dto.lobby.LobbyDataDTO;
 import com.ashapiro.catanserver.entity.LobbyEntity;
 import com.ashapiro.catanserver.entity.UserEntity;
@@ -48,17 +48,17 @@ public class LobbyServiceImpl implements LobbyService {
 
     @Transactional
     @Override
-    public CreateLobbyResponseDto createLobby(CreateLobbyRequestDto request) {
+    public CreateLobbyResponseDTO createLobby(CreateLobbyRequestDTO request) {
         String lobbyName = request.lobbyName();
         LobbyEntity lobby = new LobbyEntity();
         lobby.setName(lobbyName);
         lobbyRepository.save(lobby);
-        return new CreateLobbyResponseDto(lobby.getId());
+        return new CreateLobbyResponseDTO(lobby.getId());
     }
 
     @Transactional
     @Override
-    public Optional<LobbyEntity> removeUserFromLobby(UserEntity user) {
+    public Optional<LobbyEntity> removeUserEntityFromLobby(UserEntity user) {
         LobbyEntity lobby = lobbyRepository.findLobbyByUser(user)
                 .orElseThrow(() -> new NoSuchElementException("Lobby not found by user: " + user));
         userToLobbyService.deleteByUserId(user.getId());
@@ -76,7 +76,7 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
-    public List<AllLobbyDto> getAllLobbies() {
+    public List<AllLobbyDTO> getAllLobbies() {
         return lobbyRepository.findAllLobbies();
     }
 

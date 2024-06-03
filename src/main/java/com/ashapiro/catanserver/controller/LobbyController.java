@@ -1,8 +1,8 @@
 package com.ashapiro.catanserver.controller;
 
-import com.ashapiro.catanserver.dto.lobby.AllLobbyDto;
-import com.ashapiro.catanserver.dto.lobby.CreateLobbyRequestDto;
-import com.ashapiro.catanserver.dto.lobby.CreateLobbyResponseDto;
+import com.ashapiro.catanserver.dto.lobby.AllLobbyDTO;
+import com.ashapiro.catanserver.dto.lobby.CreateLobbyRequestDTO;
+import com.ashapiro.catanserver.dto.lobby.CreateLobbyResponseDTO;
 import com.ashapiro.catanserver.dto.lobby.LobbyDataDTO;
 import com.ashapiro.catanserver.service.LobbyService;
 import com.ashapiro.catanserver.util.TokenManager;
@@ -43,14 +43,14 @@ public class LobbyController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<CreateLobbyResponseDto> create(@RequestBody CreateLobbyRequestDto createLobbyRequest) {
+    public ResponseEntity<CreateLobbyResponseDTO> create(@RequestBody CreateLobbyRequestDTO createLobbyRequest) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(lobbyService.createLobby(createLobbyRequest));
     }
 
     @GetMapping("/all")
-    public List<AllLobbyDto> getAll() {
+    public List<AllLobbyDTO> getAll() {
         return lobbyService.getAllLobbies();
     }
 }

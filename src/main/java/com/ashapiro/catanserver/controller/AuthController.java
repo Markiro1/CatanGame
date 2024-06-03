@@ -1,12 +1,11 @@
 package com.ashapiro.catanserver.controller;
 
-import com.ashapiro.catanserver.dto.auth.LoginDto;
-import com.ashapiro.catanserver.dto.auth.RegisterDto;
-import com.ashapiro.catanserver.dto.user.SimpleUserDto;
+import com.ashapiro.catanserver.dto.auth.LoginDTO;
+import com.ashapiro.catanserver.dto.auth.RegisterDTO;
+import com.ashapiro.catanserver.dto.user.SimpleUserDTO;
 import com.ashapiro.catanserver.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
@@ -24,7 +23,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginDto loginDto, BindingResult bindingResult) throws BindException {
+    public ResponseEntity<?> login(@RequestBody LoginDTO loginDto, BindingResult bindingResult) throws BindException {
         if (bindingResult.hasErrors()) {
             throw new BindException(bindingResult);
         }
@@ -34,12 +33,12 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody @Valid RegisterDto registerDto,
+    public ResponseEntity<?> register(@RequestBody @Valid RegisterDTO registerDto,
                                       BindingResult bindingResult) throws BindException {
         if (bindingResult.hasErrors()) {
             throw new BindException(bindingResult);
         }
-        SimpleUserDto simpleUser = authService.register(registerDto);
+        SimpleUserDTO simpleUser = authService.register(registerDto);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(simpleUser);

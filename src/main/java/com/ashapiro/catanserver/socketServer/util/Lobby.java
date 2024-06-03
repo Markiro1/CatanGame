@@ -2,8 +2,8 @@ package com.ashapiro.catanserver.socketServer.util;
 
 import com.ashapiro.catanserver.game.CatanGame;
 import com.ashapiro.catanserver.game.MapGenerator;
-import com.ashapiro.catanserver.game.dto.HexDto;
-import com.ashapiro.catanserver.game.model.Player;
+import com.ashapiro.catanserver.game.dto.HexDTO;
+import com.ashapiro.catanserver.game.model.User;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -19,17 +19,17 @@ public class Lobby {
 
     private Long id;
 
-    private ConcurrentHashMap<Socket, Player> playerMap;
+    private ConcurrentHashMap<Socket, User> userMap;
 
     private CatanGame catanGame;
 
     public Lobby(Long id) {
         this.id = id;
-        this.playerMap = new ConcurrentHashMap<>();
+        this.userMap = new ConcurrentHashMap<>();
     }
 
-    public List<HexDto> startGame(List<Integer> map) {
-        List<Player> players = playerMap.entrySet()
+    public List<HexDTO> startGame(List<Integer> map) {
+        List<User> users = userMap.entrySet()
                 .stream()
                 .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
@@ -37,7 +37,7 @@ public class Lobby {
         MapGenerator mapGenerator = new MapGenerator();
         mapGenerator.generateMap(map);
         catanGame = new CatanGame(
-                players,
+                users,
                 mapGenerator.getHexes(),
                 mapGenerator.getEdges(),
                 mapGenerator.getVertices()
@@ -45,7 +45,7 @@ public class Lobby {
 
         return mapGenerator.getHexes()
                 .stream()
-                .map(hex -> new HexDto(hex.getId(), hex.getType(), hex.getNumberToken()))
+                .map(hex -> new HexDTO(hex.getId(), hex.getType(), hex.getNumberToken()))
                 .collect(Collectors.toList());
     }
 }

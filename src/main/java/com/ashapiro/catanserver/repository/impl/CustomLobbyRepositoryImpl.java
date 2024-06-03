@@ -1,7 +1,7 @@
 package com.ashapiro.catanserver.repository.impl;
 
 import com.ashapiro.catanserver.dto.lobby.LobbyDataDTO;
-import com.ashapiro.catanserver.dto.user.SimpleUserDto;
+import com.ashapiro.catanserver.dto.user.SimpleUserDTO;
 import com.ashapiro.catanserver.repository.CustomLobbyRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +27,13 @@ public class CustomLobbyRepositoryImpl implements CustomLobbyRepository {
                 .setParameter(1, token)
                 .getSingleResult();
 
-        List<SimpleUserDto> userList = entityManager.createQuery(
-                        "SELECT new com.ashapiro.catanserver.dto.user.SimpleUserDto(u.id, u.username, utl.isHost) FROM UserEntity u LEFT JOIN UserToLobby utl on utl.user.id = u.id where utl.lobby.id = ?1",
-                        SimpleUserDto.class
+        List<SimpleUserDTO> userList = entityManager.createQuery(
+                        "SELECT new com.ashapiro.catanserver.dto.user.SimpleUserDTO(u.id, u.username, utl.isHost) FROM UserEntity u LEFT JOIN UserToLobby utl on utl.user.id = u.id where utl.lobby.id = ?1",
+                        SimpleUserDTO.class
                 )
                 .setParameter(1, lobbyDataDTO.getLobbyId())
                 .getResultList();
 
-        System.out.println(userList);
         Long userId = entityManager.createQuery("select u.id from UserEntity u where u.token = ?1", Long.class)
                 .setParameter(1, token)
                 .getSingleResult();

@@ -1,13 +1,13 @@
 package com.ashapiro.catanserver.service;
 
-import com.ashapiro.catanserver.dto.auth.LoginDto;
-import com.ashapiro.catanserver.dto.auth.RegisterDto;
-import com.ashapiro.catanserver.dto.jwt.JwtResponseDto;
-import com.ashapiro.catanserver.dto.user.SimpleUserDto;
+import com.ashapiro.catanserver.dto.auth.LoginDTO;
+import com.ashapiro.catanserver.dto.auth.RegisterDTO;
+import com.ashapiro.catanserver.dto.jwt.JwtResponseDTO;
+import com.ashapiro.catanserver.dto.user.SimpleUserDTO;
 
 public interface AuthService {
 
-    JwtResponseDto createAuthToken(LoginDto requestDto);
+    JwtResponseDTO createAuthToken(LoginDTO requestDto);
 
-    SimpleUserDto register(RegisterDto registerDto);
+    SimpleUserDTO register(RegisterDTO registerDto);
 }

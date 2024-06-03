@@ -1,6 +1,6 @@
 package com.ashapiro.catanserver.repository;
 
-import com.ashapiro.catanserver.dto.lobby.AllLobbyDto;
+import com.ashapiro.catanserver.dto.lobby.AllLobbyDTO;
 import com.ashapiro.catanserver.entity.LobbyEntity;
 import com.ashapiro.catanserver.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface LobbyRepository extends JpaRepository<LobbyEntity, Long> {
 
-    @Query("select new com.ashapiro.catanserver.dto.lobby.AllLobbyDto(" +
+    @Query("select new com.ashapiro.catanserver.dto.lobby.AllLobbyDTO(" +
             "l.id, " +
             "l.name," +
             "count (u)" +
@@ -19,7 +19,7 @@ public interface LobbyRepository extends JpaRepository<LobbyEntity, Long> {
             "join UserToLobby utl on utl.lobby.id = l.id " +
             "join UserEntity u on utl.user.id = u.id " +
             "group by l.id")
-    List<AllLobbyDto> findAllLobbies();
+    List<AllLobbyDTO> findAllLobbies();
 
     @Query("select distinct l " +
             "from LobbyEntity l " +
