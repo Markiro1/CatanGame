@@ -1,9 +1,6 @@
 package com.ashapiro.catanserver.game.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.net.Socket;
 
@@ -11,7 +8,8 @@ import java.net.Socket;
 @NoArgsConstructor
 @Builder
 @Data
-public class Player {
+@ToString
+public class User {
 
     private Long id;
 
