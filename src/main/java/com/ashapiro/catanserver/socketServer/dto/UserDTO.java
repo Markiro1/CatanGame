@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public class PlayerDto {
+public class UserDTO {
     private Long id;
 
     private String name;
