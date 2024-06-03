@@ -2,7 +2,6 @@ package com.ashapiro.catanserver.config;
 
 import com.ashapiro.catanserver.util.JwtRequestFilter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
