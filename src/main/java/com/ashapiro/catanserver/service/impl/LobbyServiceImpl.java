@@ -7,6 +7,8 @@ import com.ashapiro.catanserver.dto.lobby.LobbyDataDTO;
 import com.ashapiro.catanserver.entity.LobbyEntity;
 import com.ashapiro.catanserver.entity.UserEntity;
 import com.ashapiro.catanserver.entity.UserToLobby;
+import com.ashapiro.catanserver.exceptions.rest.LobbyEntityNotFoundException;
+import com.ashapiro.catanserver.exceptions.rest.UserEntityNotFoundException;
 import com.ashapiro.catanserver.repository.CustomLobbyRepository;
 import com.ashapiro.catanserver.repository.LobbyRepository;
 import com.ashapiro.catanserver.repository.UserRepository;
@@ -19,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Service
@@ -40,9 +41,9 @@ public class LobbyServiceImpl implements LobbyService {
     @Override
     public void joinToLobby(Long lobbyId, String token) {
         UserEntity user = userRepository.findUserByToken(token)
-                .orElseThrow(() -> new NoSuchElementException("User does not exist with token: " + token));
+                .orElseThrow(() -> new UserEntityNotFoundException(token));
         LobbyEntity lobby = lobbyRepository.findLobbyByIdFetchUserToLobby(lobbyId)
-                .orElseThrow(() -> new NoSuchElementException("Lobby not found with id: " + lobbyId));
+                .orElseThrow(() -> new LobbyEntityNotFoundException(lobbyId));
         userToLobbyService.createSession(user, lobby);
     }
 
@@ -60,7 +61,7 @@ public class LobbyServiceImpl implements LobbyService {
     @Override
     public Optional<LobbyEntity> removeUserEntityFromLobby(UserEntity user) {
         LobbyEntity lobby = lobbyRepository.findLobbyByUser(user)
-                .orElseThrow(() -> new NoSuchElementException("Lobby not found by user: " + user));
+                .orElseThrow(() -> new LobbyEntityNotFoundException(user));
         userToLobbyService.deleteByUserId(user.getId());
         lobby.removeByUser(user);
         if (lobby.getUsersToLobby().isEmpty()) {

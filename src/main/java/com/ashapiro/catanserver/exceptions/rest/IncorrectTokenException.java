@@ -1,4 +1,4 @@
-package com.ashapiro.catanserver.exceptions.auth;
+package com.ashapiro.catanserver.exceptions.rest;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,6 +1,6 @@
 package com.ashapiro.catanserver.util;
 
-import com.ashapiro.catanserver.exceptions.auth.IncorrectTokenException;
+import com.ashapiro.catanserver.exceptions.rest.IncorrectTokenException;
 import com.ashapiro.catanserver.repository.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.SignatureException;
