@@ -11,7 +11,6 @@ import com.ashapiro.catanserver.socketServer.payload.broadcast.SocketBroadcastUs
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -22,7 +21,7 @@ import java.util.List;
 @Getter
 @Setter
 @Slf4j
-public class CatanGame {
+public class CatanGame extends Thread{
 
     private GameState gameState;
 
@@ -43,63 +42,74 @@ public class CatanGame {
         this.vertices = vertices;
         gameState = GameState.WAITING;
 
-        GameManager gameManager = new GameManager();
-        new Thread(gameManager).start();
+        start();
     }
 
-    private class GameManager implements Runnable {
-
-        @Override
-        @SneakyThrows
-        public void run() {
-            for (int i = 0; i < 15; i++) {
-                if (checkUsersReady()) {
-                    gameState = GameState.STARTED;
-                    break;
-                }
-                System.out.println("check user ready " + i);
-                Thread.sleep(1000);
+    @Override
+    public void run() {
+        try {
+            waitForUsersReady();
+            if (gameState == GameState.STARTED) {
+                gameLoop();
             }
-
-            if (!checkUsersReady()) {
-                users.stream()
-                        .filter(user -> !user.getIsReady())
-                        .forEach(user -> {
-                            try {
-                                user.getSocket().close();
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
-                users.removeIf(user -> !user.getIsReady());
-            }
-
-            do {
-                for (User user : users) {
-                    if (!user.getSocket().isClosed()) {
-                        sendMessageUserTurn(user, EventType.BROADCAST_USER_TURN);
-                    }
-                    Thread.sleep(TURN_DURATION);
-                }
-            } while (true);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Game manager interrupted");
         }
+    }
 
-        private void sendMessageUserTurn(User user, EventType eventType) throws IOException {
-            for (User u : users) {
-                SocketBroadcastPayload broadcast = new SocketBroadcastUserTurnPayload(
-                        eventType,
-                        user.getId()
-                );
-                ObjectMapper objectMapper = new ObjectMapper();
-                String message = objectMapper.writeValueAsString(broadcast);
+    private void gameLoop() {
+        do {
+            for (User user : users) {
+                if (!user.getSocket().isClosed()) {
+                    sendMessageUserTurn(user, EventType.BROADCAST_USER_TURN);
+                }
+            }
+        } while (true);
+    }
+
+    private void waitForUsersReady() throws InterruptedException {
+        for (int i = 0; i < 15; i++) {
+            if (checkUsersReady()) {
+                gameState = GameState.STARTED;
+                return;
+            } else {
+                cleanUpUnreadyUsers();
+            }
+            log.info("Checking if users are ready (attempt {})", i + 1);
+            Thread.sleep(1000);
+        }
+    }
+
+    private boolean checkUsersReady() {
+        return users.stream().allMatch(User::getIsReady);
+    }
+
+    private void cleanUpUnreadyUsers() {
+        users.removeIf(user -> {
+            if (!user.getIsReady()) {
+                try {
+                    user.getSocket().close();
+                } catch (IOException e) {
+                    log.error("Error closing socket for unready user: {}", user.getId(), e);
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void sendMessageUserTurn(User user, EventType eventType) {
+        for (User u : users) {
+            SocketBroadcastPayload broadcast = new SocketBroadcastUserTurnPayload(eventType, user.getId());
+            try {
+                String message = new ObjectMapper().writeValueAsString(broadcast);
                 PrintWriter printWriter = new PrintWriter(u.getSocket().getOutputStream());
                 printWriter.println(message);
                 printWriter.flush();
+            } catch (IOException e) {
+                log.error("Error sending message to user: {}", u.getId(), e);
             }
-        }
-
-        private boolean checkUsersReady() {
-            return users.stream().allMatch(User::getIsReady);
         }
     }
 }
