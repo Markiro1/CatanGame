@@ -19,7 +19,7 @@ public class SocketBroadcastStartGamePayload implements SocketBroadcastPayload {
 
     private List<Integer> hexesInRowCounts;
 
-    private List<HexDTO> hexes;
+    private int seed;
 
     private List<UserDTO> users;
 
