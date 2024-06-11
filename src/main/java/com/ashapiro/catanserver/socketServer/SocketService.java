@@ -1,19 +1,29 @@
 package com.ashapiro.catanserver.socketServer;
 
-import com.ashapiro.catanserver.socketServer.payload.SocketMessagePayload;
+import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestBuildPayload;
+import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestConnectPayload;
+import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestStartGamePayload;
+import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestTradeResourcePayload;
 
 import java.net.Socket;
 
 public interface SocketService {
-    <T extends SocketMessagePayload> void connectToLobby(Socket clientSocket, T message);
 
-    <T extends SocketMessagePayload> void startGame(Socket clientSocket, T message);
+    void connectToLobby(Socket clientSocket, SocketRequestConnectPayload message);
 
-    <T extends SocketMessagePayload> void buildHouse(Socket clientSocket, T message);
+    void startGame(Socket clientSocket, SocketRequestStartGamePayload message);
+
+    void buildSettlement(Socket clientSocket, SocketRequestBuildPayload message);
+
+    void buildRoad(Socket clientSocket, SocketRequestBuildPayload message);
+
+    void buildCity(Socket clientSocket, SocketRequestBuildPayload message);
 
     void disconnectFromLobby(Socket clientSocket);
 
     void removeUserFromLobbyIfPresent(String token);
 
     void updateUserReadyStatus(Socket clientSocket);
+
+    void tradeResource(Socket clientSocket, SocketRequestTradeResourcePayload socketMessage);
 }
