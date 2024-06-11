@@ -46,8 +46,13 @@ public class SocketServer implements CommandLineRunner {
 
             byte[] buffer = new byte[4096];
             int num;
+            StringBuilder message = new StringBuilder();
             while ((num = clientSocket.getInputStream().read(buffer)) != -1) {
-                handleMessage(clientSocket, buffer, num);
+                message.append(new String(buffer, 0, num));
+                if (message.toString().contains("/nq")) {
+                    handleMessage(clientSocket, message.toString());
+                    message = new StringBuilder();
+                }
             }
         } catch (IOException e) {
             log.error("Socket is closed.");
@@ -56,16 +61,14 @@ public class SocketServer implements CommandLineRunner {
         }
     }
 
-    private <T extends SocketMessagePayload> void handleMessage(Socket clientSocket, byte[] buffer, int num)
+    private <T extends SocketMessagePayload> void handleMessage(Socket clientSocket, String message)
             throws JsonProcessingException {
-        String requestJson = new String(buffer, 0, num);
-        List<String> queries = Arrays.asList(requestJson.split("/nq"));
-
+        List<String> queries = Arrays.asList(message.split("/nq"));
         for (String query : queries) {
-            SocketMessagePayload socketMessage = objectMapper.readValue(query, SocketMessagePayload.class);
-            EventType eventType = socketMessage.getEventType();
-            T message = (T) objectMapper.readValue(query, MessageRegistry.getMessageClass(eventType));
-            socketHandler.onMessage(clientSocket, message);
+            SocketMessagePayload socketPayload = objectMapper.readValue(query, SocketMessagePayload.class);
+            EventType eventType = socketPayload.getEventType();
+            T socketMessage = (T) objectMapper.readValue(query, MessageRegistry.getMessageClass(eventType));
+            socketHandler.onMessage(clientSocket, socketMessage);
         }
     }
 }
