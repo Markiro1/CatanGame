@@ -1,5 +1,6 @@
 package com.ashapiro.catanserver.game.factory;
 
+import com.ashapiro.catanserver.game.enums.VertexBuildingType;
 import com.ashapiro.catanserver.game.model.Vertex;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,6 +21,7 @@ public class VertexFactory {
         Vertex vertex = new Vertex();
         vertices.add(vertex);
         vertex.setId(id++);
+        vertex.setType(VertexBuildingType.NONE);
         return vertex;
     }
 }
