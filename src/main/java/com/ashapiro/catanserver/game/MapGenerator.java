@@ -15,13 +15,26 @@ import java.util.*;
 
 public class MapGenerator {
 
-    private VertexFactory vertexFactory = new VertexFactory();
+    private VertexFactory vertexFactory;
 
-    private HexFactory hexFactory = new HexFactory();
+    private HexFactory hexFactory;
 
-    private EdgeFactory edgeFactory = new EdgeFactory();
+    private EdgeFactory edgeFactory;
 
-    private Map<Coordinates, Hex> gameMap = new HashMap<>();
+    private Map<Coordinates, Hex> gameMap;
+
+    private int seed;
+
+    private Random mapRandom;
+
+    public MapGenerator() {
+        this.vertexFactory = new VertexFactory();
+        this.hexFactory = new HexFactory();
+        this.edgeFactory = new EdgeFactory();
+        this.gameMap = new HashMap<>();
+        this.seed = 200;
+        this.mapRandom = new Random(seed);
+    }
 
     public Map<Coordinates, Hex> generateMap(List<Integer> numInRows) {
 
@@ -45,7 +58,7 @@ public class MapGenerator {
                         currentHex.setNeighborHex(EdgeDirection.TL, gameMap.getOrDefault(new Coordinates(x - 1, y - 1), null));
                         currentHex.setNeighborHex(EdgeDirection.TR, gameMap.getOrDefault(new Coordinates(x, y - 1), null));
                     } else {
-                        currentHex.setNeighborHex(EdgeDirection.L, gameMap.getOrDefault(new Coordinates(x, y - 1), null));
+                        currentHex.setNeighborHex(EdgeDirection.TL, gameMap.getOrDefault(new Coordinates(x, y - 1), null));
                         currentHex.setNeighborHex(EdgeDirection.TR, gameMap.getOrDefault(new Coordinates(x + 1, y - 1), null));
                     }
                 }
@@ -229,66 +242,16 @@ public class MapGenerator {
         int numOfHexes = numInRows.stream()
                 .mapToInt(Integer::intValue)
                 .sum();
-        numOfHexes--;
-        int koefNum = numOfHexes / 3;
 
-        List<HexType> hexTypes = new ArrayList<>();
-
-        for (int i = 0; i < koefNum * 2; i++) {
-            hexTypes.add(HexType.values()[i % 3]);
-        }
-
-        for (int i = 0; i < koefNum; i++) {
-            hexTypes.add(HexType.values()[3 + (i % 2)]);
-        }
-
-        Collections.shuffle(hexTypes);
-        hexTypes.add(HexType.DESERT);
-        Collections.swap(hexTypes, numOfHexes / 2, numOfHexes);
-
+        List<HexType> hexTypes = createHexTypes(numOfHexes);
+        shuffle(hexTypes);
+        addDesert(hexTypes, numOfHexes);
 
         List<Hex> hexes = hexFactory.getHexes();
-        for (int i = 0; i < hexes.size(); i++) {
-            hexes.get(i).setType(hexTypes.get(i));
-        }
-
-        List<Integer> numberTokens = new ArrayList<>(List.of(2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12));
-        Queue<Integer> numberTokensQueue = new ArrayDeque<>();
-
-        while (numberTokensQueue.size() < hexes.size()) {
-            Collections.shuffle(numberTokens);
-            numberTokensQueue.addAll(numberTokens);
-        }
-
-        for (int i = 0; i < hexes.size(); i++) {
-            if (hexes.get(i) == hexes.get(hexes.size() / 2)) {
-                continue;
-            }
-            hexes.get(i).setNumberToken(numberTokensQueue.poll());
-        }
-
-/*
-        gameMap.values().stream()
-                .sorted(Comparator.comparing(Hex::getId))
-                .forEach(System.out::println);*/
+        setHexesType(hexes, hexTypes);
+        generateHexesNumberTokens(hexes);
 
         return gameMap;
-    }
-
-    public List<Integer> getNeighborVertexById(Integer id) {
-        List<Vertex> vertices = vertexFactory.getVertices();
-        Vertex currentVertex = vertices.stream()
-                .filter(vertex -> vertex.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new NoSuchElementException("Vertex not found with id: " + id));
-
-        List<Integer> neighborVertexIds = currentVertex.getEdges().stream()
-                .flatMap(edge -> edge.getVertices().stream())
-                .filter(vertex -> !vertex.getId().equals(currentVertex.getId()))
-                .map(Vertex::getId)
-                .toList();
-
-        return neighborVertexIds;
     }
 
     public List<Hex> getHexes() {
@@ -301,5 +264,61 @@ public class MapGenerator {
 
     public List<Edge> getEdges() {
         return edgeFactory.getEdges();
+    }
+
+
+    public int getSeed() {
+        return seed;
+    }
+
+    private void setHexesType(List<Hex> hexes, List<HexType> hexTypes) {
+        for (int i = 0; i < hexes.size(); i++) {
+            hexes.get(i).setType(hexTypes.get(i));
+        }
+    }
+
+    private List<HexType> createHexTypes(int numOfHexes) {
+        numOfHexes--;
+        int coefficientNum = numOfHexes / 3;
+        int numbOfPrimaryResources = coefficientNum * 2;
+        int numbOfSecondaryResources = coefficientNum;
+        List<HexType> hexTypes = new ArrayList<>();
+        for (int i = 0; i < numbOfPrimaryResources; i++) {
+            hexTypes.add(HexType.values()[i % 3]);
+        }
+
+        for (int i = 0; i < numbOfSecondaryResources; i++) {
+            hexTypes.add(HexType.values()[3 + (i % 2)]);
+        }
+        return hexTypes;
+    }
+
+    private <T> void shuffle(List<T> list) {
+        for (int i = 0; i < list.size(); i++) {
+            int randomIndex = mapRandom.nextInt(list.size());
+            Collections.swap(list, i, randomIndex);
+        }
+    }
+
+    private void addDesert(List<HexType> hexTypes, int numOfHexes) {
+        hexTypes.add(HexType.DESERT);
+        Collections.swap(hexTypes, numOfHexes / 2, numOfHexes - 1);
+    }
+
+    private void generateHexesNumberTokens(List<Hex> hexes) {
+        List<Integer> numberTokens = new ArrayList<>(List.of(2, 3, 3, 4, 4, 5, 5, 6, 6, 8, 8, 9, 9, 10, 10, 11, 11, 12));
+        Queue<Integer> numberTokensQueue = new ArrayDeque<>();
+
+        while (numberTokensQueue.size() < hexes.size()) {
+            shuffle(numberTokens);
+            numberTokensQueue.addAll(numberTokens);
+        }
+
+        for (int i = 0; i < hexes.size(); i++) {
+            if (hexes.get(i) == hexes.get(hexes.size() / 2)) {
+                continue;
+            }
+            hexes.get(i).setNumberToken(numberTokensQueue.poll());
+        }
     }
 }
