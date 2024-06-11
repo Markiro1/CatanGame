@@ -11,6 +11,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Getter @Setter
 @SuperBuilder
-public class SocketRequestBuildHousePayload extends SocketMessagePayload {
-    private int vertexId;
+public class SocketRequestBuildPayload extends SocketMessagePayload {
+    private int fieldId;
 }
