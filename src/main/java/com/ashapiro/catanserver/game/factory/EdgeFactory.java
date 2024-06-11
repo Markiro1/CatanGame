@@ -1,5 +1,6 @@
 package com.ashapiro.catanserver.game.factory;
 
+import com.ashapiro.catanserver.game.enums.EdgeBuildingType;
 import com.ashapiro.catanserver.game.model.Edge;
 import com.ashapiro.catanserver.game.model.Vertex;
 import lombok.Getter;
@@ -19,14 +20,15 @@ public class EdgeFactory {
 
     public Edge createEdge(Vertex vertex1, Vertex vertex2) {
         Edge edge = new Edge();
-        edge.getVertices().add(vertex1);
-        edge.getVertices().add(vertex2);
+        edge.getNeighborVertices().add(vertex1);
+        edge.getNeighborVertices().add(vertex2);
 
-        vertex1.getEdges().add(edge);
-        vertex2.getEdges().add(edge);
+        vertex1.getNeighbourEdges().add(edge);
+        vertex2.getNeighbourEdges().add(edge);
 
         edge.setId(id++);
         edges.add(edge);
+        edge.setType(EdgeBuildingType.NONE);
         return edge;
     }
 }
