@@ -9,5 +9,7 @@ import lombok.Getter;
 public class SocketBroadcastUserTurnPayload implements SocketBroadcastPayload {
     private EventType eventType;
 
-    private Long id;
+   private Long userId;
+
+   private Integer numOfTurn;
 }
