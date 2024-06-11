@@ -1,16 +1,22 @@
 package com.ashapiro.catanserver.game.model;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.ashapiro.catanserver.game.User;
+import com.ashapiro.catanserver.game.enums.EdgeBuildingType;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @NoArgsConstructor
 @Getter @Setter
+@ToString(exclude = "neighborVertices")
+@EqualsAndHashCode
 public class Edge {
     private Integer id;
 
-    private List<Vertex> vertices = new ArrayList<>();
+    private List<Vertex> neighborVertices = new ArrayList<>();
+
+    private EdgeBuildingType type;
+
+    private User user;
 }
