@@ -1,10 +1,10 @@
 package com.ashapiro.catanserver.game.enums;
 
 public enum EdgeDirection {
-    R,
-    L,
     TR,
-    TL,
+    R,
     DR,
-    DL;
+    DL,
+    L,
+    TL
 }
