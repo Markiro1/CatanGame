@@ -10,5 +10,5 @@ public interface SocketHandler {
 
     void onClose(Socket socket);
 
-    <T extends SocketMessagePayload> void onMessage(Socket clientSocket, T message);
+    void onMessage(Socket clientSocket, SocketMessagePayload message);
 }
