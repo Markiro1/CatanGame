@@ -2,6 +2,7 @@ package com.ashapiro.catanserver.socketServer.payload.broadcast;
 
 import com.ashapiro.catanserver.enums.EventType;
 import com.ashapiro.catanserver.game.enums.Resource;
+import com.ashapiro.catanserver.socketServer.payload.SocketBroadcastPayload;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,9 +14,9 @@ public class SocketBroadcastUserTrade implements SocketBroadcastPayload {
 
     private Long userId;
 
-    private Resource userIncomingResources;
+    private Resource userSellResource;
 
-    private Resource userOutgoingResources;
+    private Resource userBuyResource;
 
-    private int requestedCountOfOutgoingResource;
+    private int requestedAmountOfBuyResource;
 }

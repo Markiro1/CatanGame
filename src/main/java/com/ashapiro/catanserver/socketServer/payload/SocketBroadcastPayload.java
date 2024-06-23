@@ -1,4 +1,4 @@
-package com.ashapiro.catanserver.socketServer.payload.broadcast;
+package com.ashapiro.catanserver.socketServer.payload;
 
 import com.ashapiro.catanserver.enums.EventType;
 

@@ -1,8 +1,8 @@
 package com.ashapiro.catanserver.socketServer.payload.broadcast;
 
 import com.ashapiro.catanserver.enums.EventType;
-import com.ashapiro.catanserver.game.dto.HexDTO;
 import com.ashapiro.catanserver.socketServer.dto.UserDTO;
+import com.ashapiro.catanserver.socketServer.payload.SocketBroadcastPayload;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
