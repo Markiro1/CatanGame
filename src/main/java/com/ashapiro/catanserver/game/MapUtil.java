@@ -1,11 +1,15 @@
 package com.ashapiro.catanserver.game;
 
 import com.ashapiro.catanserver.game.enums.EdgeBuildingType;
+import com.ashapiro.catanserver.game.enums.HarborType;
 import com.ashapiro.catanserver.game.enums.VertexBuildingType;
 import com.ashapiro.catanserver.game.model.Edge;
+import com.ashapiro.catanserver.game.model.User;
 import com.ashapiro.catanserver.game.model.Vertex;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class MapUtil {
@@ -39,10 +43,25 @@ public class MapUtil {
         return new ArrayList<>(availableEdges);
     }
 
-    private static List<Edge> getNeighboursEdgeToEdge(Edge edge) {
+    public static List<Edge> getNeighboursEdgeToEdge(Edge edge) {
         return edge.getNeighborVertices().stream()
                 .flatMap(vertex -> vertex.getNeighbourEdges().stream())
                 .filter(e -> e.getType().equals(EdgeBuildingType.NONE) && !e.equals(edge))
                 .toList();
+    }
+
+    public static boolean isUserHaveSpecialHarborWithType(List<Vertex> userVertices, HarborType harborType) {
+        return userVertices.stream()
+                .anyMatch(vertex -> vertex.getHarborType() != null &&
+                        vertex.getHarborType().equals(harborType) &&
+                        (vertex.getType().equals(VertexBuildingType.SETTLEMENT) || vertex.getType().equals(VertexBuildingType.CITY)));
+
+    }
+
+    public static boolean isUserHaveGenericHarbor(List<Vertex> userVertices) {
+        return userVertices.stream()
+                .anyMatch(vertex -> vertex.getHarborType() != null &&
+                        vertex.getHarborType().equals(HarborType.GENERIC) &&
+                        (vertex.getType().equals(VertexBuildingType.SETTLEMENT) || vertex.getType().equals(VertexBuildingType.CITY)));
     }
 }
