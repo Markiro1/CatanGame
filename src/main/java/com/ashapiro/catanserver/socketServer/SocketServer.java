@@ -2,6 +2,7 @@ package com.ashapiro.catanserver.socketServer;
 
 import com.ashapiro.catanserver.enums.EventType;
 import com.ashapiro.catanserver.socketServer.payload.SocketMessagePayload;
+import com.ashapiro.catanserver.socketServer.payload.request.DefaultSocketMessagePayload;
 import com.ashapiro.catanserver.socketServer.util.MessageRegistry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,14 +62,18 @@ public class SocketServer implements CommandLineRunner {
         }
     }
 
-    private <T extends SocketMessagePayload> void handleMessage(Socket clientSocket, String message)
+    private void handleMessage(Socket clientSocket, String message)
             throws JsonProcessingException {
         List<String> queries = Arrays.asList(message.split("/nq"));
         for (String query : queries) {
-            SocketMessagePayload socketPayload = objectMapper.readValue(query, SocketMessagePayload.class);
-            EventType eventType = socketPayload.getEventType();
-            T socketMessage = (T) objectMapper.readValue(query, MessageRegistry.getMessageClass(eventType));
-            socketHandler.onMessage(clientSocket, socketMessage);
+            try {
+                DefaultSocketMessagePayload socketPayload = objectMapper.readValue(query, DefaultSocketMessagePayload.class);
+                EventType eventType = socketPayload.getEventType();
+                SocketMessagePayload socketMessage = objectMapper.readValue(query, MessageRegistry.getMessageClass(eventType));
+                socketHandler.onMessage(clientSocket, socketMessage);
+            } catch (Exception e) {
+                System.out.println("ERROR PARSING TYPE " + e.getMessage());
+            }
         }
     }
 }
