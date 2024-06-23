@@ -1,6 +1,5 @@
 package com.ashapiro.catanserver.game.model;
 
-import com.ashapiro.catanserver.game.User;
 import com.ashapiro.catanserver.game.enums.EdgeBuildingType;
 import lombok.*;
 
@@ -13,6 +12,8 @@ import java.util.List;
 @EqualsAndHashCode
 public class Edge {
     private Integer id;
+
+    private List<Hex> hexes = new ArrayList<>();
 
     private List<Vertex> neighborVertices = new ArrayList<>();
 
