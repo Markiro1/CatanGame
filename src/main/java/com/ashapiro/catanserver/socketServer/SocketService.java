@@ -1,9 +1,6 @@
 package com.ashapiro.catanserver.socketServer;
 
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestBuildPayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestConnectPayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestStartGamePayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestTradeResourcePayload;
+import com.ashapiro.catanserver.socketServer.payload.request.*;
 
 import java.net.Socket;
 
@@ -26,4 +23,20 @@ public interface SocketService {
     void updateUserReadyStatus(Socket clientSocket);
 
     void tradeResource(Socket clientSocket, SocketRequestTradeResourcePayload socketMessage);
+
+    void exchangeResourcesOffer(Socket clientSocket, SocketRequestExchangeResourcesOfferPayload socketMessage);
+
+    void buyCard(Socket clientSocket);
+
+    void userRobbery(Socket clientSocket, SocketRequestRobberyPayload message);
+
+    void useKnightCard(Socket clientSocket, SocketRequestUseKnightCardPayload message);
+
+    void useMonopolyCard(Socket clientSocket, SocketRequestUseMonopolyCardPayload message);
+
+    void useYearOfPlentyCard(Socket clientSocket, SocketRequestUseYearOfPlentyCardPayload message);
+
+    void useRoadBuildingCard(Socket clientSocket);
+
+    void exchange(Socket clientSocket, SocketRequestExchangePayload socketMessage);
 }
