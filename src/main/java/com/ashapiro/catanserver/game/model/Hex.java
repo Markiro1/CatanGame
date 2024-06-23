@@ -24,6 +24,8 @@ public class Hex {
 
     private Map<EdgeDirection, Edge> edges;
 
+    private boolean isOccupiedByRobber;
+
     public Hex() {
         neighborHex = new EnumMap<>(EdgeDirection.class);
         for (EdgeDirection direction : EdgeDirection.values()) {
