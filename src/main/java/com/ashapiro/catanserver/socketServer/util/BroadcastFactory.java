@@ -2,10 +2,10 @@ package com.ashapiro.catanserver.socketServer.util;
 
 import com.ashapiro.catanserver.dto.user.SimpleUserDTO;
 import com.ashapiro.catanserver.enums.EventType;
-import com.ashapiro.catanserver.game.model.Lobby;
-import com.ashapiro.catanserver.game.model.User;
 import com.ashapiro.catanserver.game.enums.Card;
 import com.ashapiro.catanserver.game.enums.Resource;
+import com.ashapiro.catanserver.game.model.Lobby;
+import com.ashapiro.catanserver.game.model.User;
 import com.ashapiro.catanserver.socketServer.dto.UserDTO;
 import com.ashapiro.catanserver.socketServer.payload.SocketBroadcastPayload;
 import com.ashapiro.catanserver.socketServer.payload.broadcast.*;
