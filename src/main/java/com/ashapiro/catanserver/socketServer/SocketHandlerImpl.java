@@ -1,10 +1,7 @@
 package com.ashapiro.catanserver.socketServer;
 
 import com.ashapiro.catanserver.socketServer.payload.SocketMessagePayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestBuildPayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestConnectPayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestStartGamePayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestTradeResourcePayload;
+import com.ashapiro.catanserver.socketServer.payload.request.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -38,54 +35,108 @@ public class SocketHandlerImpl implements SocketHandler {
     }
 
     @Override
-    public <T extends SocketMessagePayload> void onMessage(Socket clientSocket, T message) {
+    public void onMessage(Socket clientSocket, SocketMessagePayload message) {
         switch (message.getEventType()) {
             case REQUEST_CONNECT -> handleConnect(clientSocket, message);
             case REQUEST_START_GAME -> handleStartGame(clientSocket, message);
             case REQUEST_READY_AND_LOAD, REQUEST_USER_TURN_READY -> socketService.updateUserReadyStatus(clientSocket);
+
             case REQUEST_BUILD_SETTLEMENT -> handleBuildSettlement(clientSocket, message);
             case REQUEST_BUILD_ROAD -> handleBuildRoad(clientSocket, message);
             case REQUEST_BUILD_CITY -> handleBuildCity(clientSocket, message);
+
+            case REQUEST_USE_KNIGHT_CARD -> handleUseKnightCard(clientSocket, message);
+            case REQUEST_USE_MONOPOLY_CARD -> handleUseMonopolyCard(clientSocket, message);
+            case REQUEST_USE_YEAR_OF_PLENTY_CARD -> handleUseYearOfPlentyCard(clientSocket, message);
+            case REQUEST_USE_ROAD_BUILDING_CARD ->  socketService.useRoadBuildingCard(clientSocket);
+
+            case REQUEST_USER_ROBBERY -> handleUserRobbery(clientSocket, message);
+
             case REQUEST_TRADE_RESOURCE -> handleTradeResource(clientSocket, message);
+            case REQUEST_EXCHANGE_OFFER -> handleExchangeOffer(clientSocket, message);
+            case REQUEST_EXCHANGE -> handleExchange(clientSocket, message);
+            case REQUEST_BUY_CARD -> socketService.buyCard(clientSocket);
         }
     }
 
-    private <T extends SocketMessagePayload> void handleTradeResource(Socket clientSocket, T message) {
+    private void handleExchange(Socket clientSocket, SocketMessagePayload message) {
+        if (message instanceof SocketRequestExchangePayload) {
+            SocketRequestExchangePayload socketMessage = (SocketRequestExchangePayload) message;
+            socketService.exchange(clientSocket, socketMessage);
+        }
+    }
+
+    private void handleExchangeOffer(Socket clientSocket, SocketMessagePayload message) {
+        if (message instanceof SocketRequestExchangeResourcesOfferPayload) {
+            SocketRequestExchangeResourcesOfferPayload socketMessage = (SocketRequestExchangeResourcesOfferPayload) message;
+            socketService.exchangeResourcesOffer(clientSocket, socketMessage);
+        }
+    }
+
+    private void handleUseYearOfPlentyCard(Socket clientSocket, SocketMessagePayload message) {
+        if (message instanceof SocketRequestUseYearOfPlentyCardPayload) {
+            SocketRequestUseYearOfPlentyCardPayload socketMessage = (SocketRequestUseYearOfPlentyCardPayload) message;
+            socketService.useYearOfPlentyCard(clientSocket, socketMessage);
+        }
+    }
+
+    private void handleUseMonopolyCard(Socket clientSocket, SocketMessagePayload message) {
+        if (message instanceof SocketRequestUseMonopolyCardPayload) {
+            SocketRequestUseMonopolyCardPayload socketMessage = (SocketRequestUseMonopolyCardPayload) message;
+            socketService.useMonopolyCard(clientSocket, socketMessage);
+        }
+    }
+
+    private void handleUseKnightCard(Socket clientSocket, SocketMessagePayload message) {
+        if (message instanceof SocketRequestUseKnightCardPayload) {
+            SocketRequestUseKnightCardPayload socketMessage = (SocketRequestUseKnightCardPayload) message;
+            socketService.useKnightCard(clientSocket, socketMessage);
+        }
+    }
+
+    private void handleUserRobbery(Socket clientSocket, SocketMessagePayload message) {
+        if (message instanceof SocketRequestRobberyPayload) {
+            SocketRequestRobberyPayload socketMessage = (SocketRequestRobberyPayload) message;
+            socketService.userRobbery(clientSocket, socketMessage);
+        }
+    }
+
+    private void handleTradeResource(Socket clientSocket, SocketMessagePayload message) {
         if (message instanceof SocketRequestTradeResourcePayload) {
             SocketRequestTradeResourcePayload socketMessage = (SocketRequestTradeResourcePayload) message;
             socketService.tradeResource(clientSocket, socketMessage);
         }
     }
 
-    private <T extends SocketMessagePayload> void handleConnect(Socket clientSocket, T message) {
+    private  void handleConnect(Socket clientSocket, SocketMessagePayload message) {
         if (message instanceof SocketRequestConnectPayload) {
             SocketRequestConnectPayload socketMessage = (SocketRequestConnectPayload) message;
             socketService.connectToLobby(clientSocket, socketMessage);
         }
     }
 
-    private <T extends SocketMessagePayload> void handleStartGame(Socket clientSocket, T message) {
+    private void handleStartGame(Socket clientSocket, SocketMessagePayload message) {
         if (message instanceof SocketRequestStartGamePayload) {
             SocketRequestStartGamePayload socketMessage = (SocketRequestStartGamePayload) message;
             socketService.startGame(clientSocket, socketMessage);
         }
     }
 
-    private <T extends SocketMessagePayload> void handleBuildSettlement(Socket clientSocket, T message) {
+    private void handleBuildSettlement(Socket clientSocket, SocketMessagePayload message) {
         if (message instanceof SocketRequestBuildPayload) {
             SocketRequestBuildPayload socketMessage = (SocketRequestBuildPayload) message;
             socketService.buildSettlement(clientSocket, socketMessage);
         }
     }
 
-    private <T extends SocketMessagePayload> void handleBuildRoad(Socket clientSocket, T message) {
+    private void handleBuildRoad(Socket clientSocket, SocketMessagePayload message) {
         if (message instanceof SocketRequestBuildPayload) {
             SocketRequestBuildPayload socketMessage = (SocketRequestBuildPayload) message;
             socketService.buildRoad(clientSocket, socketMessage);
         }
     }
 
-    private <T extends SocketMessagePayload> void handleBuildCity(Socket clientSocket, T message) {
+    private void handleBuildCity(Socket clientSocket, SocketMessagePayload message) {
         if (message instanceof SocketRequestBuildPayload) {
             SocketRequestBuildPayload socketMessage = (SocketRequestBuildPayload) message;
             socketService.buildCity(clientSocket, socketMessage);
