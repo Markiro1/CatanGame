@@ -493,18 +493,6 @@ public class GameServiceImpl implements GameService {
             });
         }
         return stolenResource;
-
-      /* todo: PREVIOUS VERSION
-      List<Resource> resources = victim.getResourceInventory().entrySet().stream()
-                .filter(entry -> entry.getValue() > 0)
-                .map(Map.Entry::getKey)
-                .toList();
-        if (!resources.isEmpty()) {
-            Resource stolenResource = resources.get(new Random().nextInt(resources.size()));
-            robber.stealFromAnotherUser(victim, stolenResource);
-            return stolenResource;
-        }
-        return null;*/
     }
 
     private boolean isVictimOnHexEdges(Hex hex, User victim) {
