@@ -8,34 +8,27 @@ import com.ashapiro.catanserver.exceptions.rest.UserEntityNotFoundException;
 import com.ashapiro.catanserver.exceptions.socket.LobbyNotFoundException;
 import com.ashapiro.catanserver.exceptions.socket.SocketNotFoundException;
 import com.ashapiro.catanserver.exceptions.socket.UserNotFoundException;
-import com.ashapiro.catanserver.game.*;
-import com.ashapiro.catanserver.game.enums.EdgeBuildingType;
+import com.ashapiro.catanserver.game.CatanGame;
 import com.ashapiro.catanserver.game.enums.GameState;
 import com.ashapiro.catanserver.game.enums.Resource;
-import com.ashapiro.catanserver.game.enums.VertexBuildingType;
-import com.ashapiro.catanserver.game.model.Edge;
-import com.ashapiro.catanserver.game.model.Vertex;
+import com.ashapiro.catanserver.game.model.Lobby;
+import com.ashapiro.catanserver.game.model.User;
+import com.ashapiro.catanserver.game.service.GameService;
+import com.ashapiro.catanserver.game.service.GameServiceImpl;
 import com.ashapiro.catanserver.service.LobbyService;
 import com.ashapiro.catanserver.service.UserService;
 import com.ashapiro.catanserver.service.UserToLobbyService;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestBuildPayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestConnectPayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestStartGamePayload;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestTradeResourcePayload;
-import com.ashapiro.catanserver.socketServer.util.Lobby;
-import lombok.RequiredArgsConstructor;
+import com.ashapiro.catanserver.socketServer.payload.request.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Slf4j
 public class SocketServiceImpl implements SocketService {
@@ -46,9 +39,25 @@ public class SocketServiceImpl implements SocketService {
 
     private final UserToLobbyService userToLobbyService;
 
-    private final SocketMessageSender socketMessageSender;
+    private SocketMessageSender socketMessageSender;
 
-    private List<SocketInfo> socketInfos = new ArrayList<>();
+    private GameService gameService;
+
+    private List<SocketInfo> socketInfos;
+
+    public SocketServiceImpl(
+            UserService userService,
+            LobbyService lobbyService,
+            UserToLobbyService userToLobbyService,
+            List<SocketInfo> socketInfos
+    ) {
+        this.userService = userService;
+        this.lobbyService = lobbyService;
+        this.userToLobbyService = userToLobbyService;
+        this.socketMessageSender = SocketMessageSenderImpl.getInstance();
+        this.gameService = GameServiceImpl.getInstance();
+        this.socketInfos = socketInfos;
+    }
 
     @Transactional
     @Override
@@ -65,82 +74,6 @@ public class SocketServiceImpl implements SocketService {
         socketInfo.setToken(token);
         userEntity.getUserToLobby().setStatus(UserToLobby.ConnectionStatus.CONNECTED);
         socketMessageSender.broadcastNewConnect(socketInfo, userEntity);
-
-    }
-
-    @Override
-    public void startGame(Socket clientSocket, SocketRequestStartGamePayload message) {
-        Lobby lobby = getLobbyBySocket(clientSocket);
-        UserEntity userEntity = getUserEntity(clientSocket);
-        if (checkUserIsHost(userEntity)) {
-            socketMessageSender.broadcastStartGame(clientSocket, message, lobby);
-        }
-    }
-
-    @Override
-    public void buildSettlement(Socket clientSocket, SocketRequestBuildPayload message) {
-        Lobby lobby = getLobbyBySocket(clientSocket);
-        User user = getUserBySocket(clientSocket);
-        CatanGame catanGame = lobby.getCatanGame();
-        Vertex currentVertex = catanGame.getVertices().get(message.getFieldId());
-
-        if (canBuiltSettlement(currentVertex, user, catanGame)) {
-            if (!catanGame.getGameState().equals(GameState.PREPARATION_BUILD_SETTLEMENTS)) {
-                transferResourceToBank(catanGame.getBank(), user, ResourceCost.getSettlementCost());
-            }
-            currentVertex.setUser(user);
-            currentVertex.setType(VertexBuildingType.SETTLEMENT);
-            socketMessageSender.broadcastUserBuildSettlements(lobby, user, currentVertex.getId());
-        } else {
-            socketMessageSender.sendMessage(clientSocket, "This vertex is already occupied");
-        }
-    }
-
-    @Override
-    public void buildRoad(Socket clientSocket, SocketRequestBuildPayload message) {
-        Lobby lobby = getLobbyBySocket(clientSocket);
-        User user = getUserBySocket(clientSocket);
-        CatanGame catanGame = lobby.getCatanGame();
-        Edge currentEdge = catanGame.getEdges().get(message.getFieldId());
-
-        if (canBuildRoad(currentEdge, user, catanGame)) {
-            if (!catanGame.getGameState().equals(GameState.PREPARATION_BUILD_ROADS)) {
-                transferResourceToBank(lobby.getCatanGame().getBank(), user, ResourceCost.getRoadCost());
-            }
-            currentEdge.setUser(user);
-            currentEdge.setType(EdgeBuildingType.ROAD);
-            socketMessageSender.broadcastUserBuildRoad(lobby, user, currentEdge.getId());
-        } else {
-            socketMessageSender.sendMessage(clientSocket, "This edge is already occupied");
-        }
-    }
-
-    @Override
-    public void buildCity(Socket clientSocket, SocketRequestBuildPayload message) {
-        Lobby lobby = getLobbyBySocket(clientSocket);
-        User user = getUserBySocket(clientSocket);
-        CatanGame catanGame = lobby.getCatanGame();
-        Vertex currentVertex = catanGame.getVertices().get(message.getFieldId());
-
-        if (canBuildCity(currentVertex, user, catanGame)) {
-            transferResourceToBank(lobby.getCatanGame().getBank(), user, ResourceCost.getCityCost());
-        }
-        currentVertex.setType(VertexBuildingType.CITY);
-        socketMessageSender.broadcastUserBuildCity(lobby, user, currentVertex.getId());
-    }
-
-    @Override
-    public void tradeResource(Socket clientSocket, SocketRequestTradeResourcePayload message) {
-        Lobby lobby = getLobbyBySocket(clientSocket);
-        User user = getUserBySocket(clientSocket);
-        Bank bank = lobby.getCatanGame().getBank();
-        if (bankContainsResources(bank, clientSocket, message) && userContainsResource(user, clientSocket, message)) {
-            bank.tradeResource(user, message);
-            Resource incomingResource = message.getIncomingResource();
-            Resource outgointResource = message.getOutgoingResource();
-            int requestedCountOfOutgoingResource = message.getRequestedCountOfOutgoingResource();
-            socketMessageSender.broadcastUserTrade(lobby, user.getId(), incomingResource, outgointResource, requestedCountOfOutgoingResource);
-        }
     }
 
     @Transactional
@@ -164,7 +97,25 @@ public class SocketServiceImpl implements SocketService {
     }
 
     @Override
+    public void startGame(Socket clientSocket, SocketRequestStartGamePayload message) {
+        UserEntity userEntity = getUserEntity(clientSocket);
+        if (checkUserIsHost(userEntity)) {
+            Lobby lobby = getLobbyBySocket(clientSocket);
+            int seed;
+            if (lobby.getCatanGame() == null) {
+                seed = lobby.startGame(message.getNumHexesInMapRow());
+            } else {
+                seed = lobby.getCatanGame().getSeed();
+            }
+            socketMessageSender.broadcastStartGame(seed, message.getNumHexesInMapRow(), lobby);
+        }
+    }
+
+    @Override
     public void removeUserFromLobbyIfPresent(String token) {
+        if (token == null || token.isEmpty()) {
+            return;
+        }
         UserEntity userEntity = userService.findUserEntityByToken(token)
                 .orElseThrow(() -> new UserEntityNotFoundException(token));
         UserToLobby userToLobby = userEntity.getUserToLobby();
@@ -177,126 +128,174 @@ public class SocketServiceImpl implements SocketService {
     }
 
     @Override
+    public void buildSettlement(Socket clientSocket, SocketRequestBuildPayload message) {
+        User user = getUserBySocket(clientSocket);
+        if (isNotUserTurn(user)) {
+            return;
+        }
+        CatanGame game = getGameBySocket(clientSocket);
+        int fieldId = message.getFieldId();
+        gameService.buildSettlement(clientSocket, game, user, fieldId);
+    }
+
+    @Override
+    public void buildRoad(Socket clientSocket, SocketRequestBuildPayload message) {
+        User user = getUserBySocket(clientSocket);
+        if (isNotUserTurn(user)) {
+            return;
+        }
+        CatanGame game = getGameBySocket(clientSocket);
+        int fieldId = message.getFieldId();
+        gameService.buildRoad(clientSocket, game, user, fieldId);
+    }
+
+    @Override
+    public void buildCity(Socket clientSocket, SocketRequestBuildPayload message) {
+        User user = getUserBySocket(clientSocket);
+        if (isNotUserTurn(user)) {
+            return;
+        }
+        CatanGame game = getGameBySocket(clientSocket);
+        int fieldId = message.getFieldId();
+        gameService.buildCity(clientSocket, game, user, fieldId);
+    }
+
+    @Override
+    public void tradeResource(Socket clientSocket, SocketRequestTradeResourcePayload message) {
+        CatanGame game = getGameBySocket(clientSocket);
+        User user = getUserBySocket(clientSocket);
+        if (isNotUserTurn(user)) {
+            return;
+        }
+        int requestedAmountOfBuyResource = message.getRequestedAmountOfBuyResource();
+        Resource sellResource = message.getSellResource();
+        Resource buyResource = message.getBuyResource();
+        gameService.tradeResource(clientSocket, game, user, requestedAmountOfBuyResource, sellResource, buyResource);
+    }
+
+    @Override
+    public void exchange(Socket clientSocket, SocketRequestExchangePayload socketMessage) {
+        if (isNotUserTurn(clientSocket)) {
+            return;
+        }
+        CatanGame game = getGameBySocket(clientSocket);
+        Long exchangeId = socketMessage.getExchangeId();
+        boolean isAccept = socketMessage.isAccept();
+        gameService.exchange(
+                game,
+                exchangeId,
+                isAccept
+        );
+    }
+
+    @Override
+    public void exchangeResourcesOffer(Socket clientSocket, SocketRequestExchangeResourcesOfferPayload socketMessage) {
+        User initiatorUser = getUserBySocket(clientSocket);
+        if (isNotUserTurn(initiatorUser)) {
+            return;
+        }
+
+        Long targetUserId = socketMessage.getTargetUserId();
+        int targetAmountOfResource = socketMessage.getTargetAmountOfResource();
+        int initiatorAmountOfResource = socketMessage.getInitiatorAmountOfResource();
+        Resource targetResource = socketMessage.getTargetResource();
+        Resource initiatorResource = socketMessage.getInitiatorResource();
+
+        CatanGame game = getGameBySocket(clientSocket);
+        User targetUser = game.getUserById(targetUserId);
+
+        gameService.exchangeResourcesOffer(
+                game,
+                initiatorUser,
+                targetUser,
+                initiatorResource,
+                initiatorAmountOfResource,
+                targetResource,
+                targetAmountOfResource
+        );
+    }
+
+    @Override
     public void updateUserReadyStatus(Socket clientSocket) {
         User user = getUserBySocket(clientSocket);
+        CatanGame game = getGameBySocket(clientSocket);
+        if (!game.getGameState().equals(GameState.USER_TURN) && !game.getGameState().equals(GameState.WAITING)) {
+            return;
+        }
         user.setIsReady(true);
+    }
+
+    @Override
+    public void buyCard(Socket clientSocket) {
+        CatanGame catanGame = getGameBySocket(clientSocket);
+        User user = getUserBySocket(clientSocket);
+        if (isNotUserTurn(user)) {
+            return;
+        }
+        gameService.buyDevCard(catanGame, user);
+    }
+
+    @Override
+    public void userRobbery(Socket clientSocket, SocketRequestRobberyPayload message) {
+        Lobby lobby = getLobbyBySocket(clientSocket);
+        User robber = getUserBySocket(clientSocket);
+        if (isNotUserTurn(robber)) {
+            return;
+        }
+        Long victimUserId = message.getVictimUserId();
+        int hexId = message.getHexId();
+        gameService.userRobbery(lobby.getCatanGame(), robber, victimUserId, hexId);
+    }
+
+    @Override
+    public void useKnightCard(Socket clientSocket, SocketRequestUseKnightCardPayload message) {
+        User userWhoUseCard = getUserBySocket(clientSocket);
+        if (isNotUserTurn(userWhoUseCard)) {
+            return;
+        }
+        CatanGame game = getGameBySocket(clientSocket);
+        int hexId = message.getHexId();
+        gameService.useKnightCard(game, userWhoUseCard, hexId);
+    }
+
+    @Override
+    public void useMonopolyCard(Socket clientSocket, SocketRequestUseMonopolyCardPayload message) {
+        User userWhoUseCard = getUserBySocket(clientSocket);
+        if (isNotUserTurn(userWhoUseCard)) {
+            return;
+        }
+        CatanGame game = getGameBySocket(clientSocket);
+        Resource resource = message.getResource();
+        gameService.useMonopolyCard(game, userWhoUseCard, resource);
+    }
+
+    @Override
+    public void useYearOfPlentyCard(Socket clientSocket, SocketRequestUseYearOfPlentyCardPayload message) {
+        User userWhoUseCard = getUserBySocket(clientSocket);
+        if (isNotUserTurn(userWhoUseCard)) {
+            return;
+        }
+        CatanGame game = getGameBySocket(clientSocket);
+        List<Resource> resources = message.getResources();
+        gameService.userYearOfPlentyCard(game, userWhoUseCard, resources);
+    }
+
+    @Override
+    public void useRoadBuildingCard(Socket clientSocket) {
+        User userWhoUseCard = getUserBySocket(clientSocket);
+        if (isNotUserTurn(userWhoUseCard)) {
+            return;
+        }
+        CatanGame game = getGameBySocket(clientSocket);
+        gameService.useRoadBuildingCard(game, userWhoUseCard);
     }
 
     public List<SocketInfo> getSocketInfos() {
         return socketInfos;
     }
 
-    private boolean userContainsResource(User user, Socket clientSocket, SocketRequestTradeResourcePayload message) {
-        Map<Resource, Integer> userInventory = user.getInventory();
-        Resource incomingResource = message.getIncomingResource();
-        int availableUserResources = userInventory.get(incomingResource);
-        boolean userContainsResources = availableUserResources >= 4;
-        if (!userContainsResources) {
-            socketMessageSender.sendMessage(clientSocket,
-                    String.format("%s does not have enough resources with type ^%s", user.getName(), incomingResource));
-        }
-        return userContainsResources;
-    }
-
-
-    private boolean bankContainsResources(Bank bank, Socket clientSocket, SocketRequestTradeResourcePayload message) {
-        int desiredCountOfOutgoingResource = message.getRequestedCountOfOutgoingResource();
-        Resource outgoingResource = message.getOutgoingResource();
-        int availableResource = bank.getStorage().getOrDefault(outgoingResource, 0);
-        boolean bankContainsResources = availableResource >= desiredCountOfOutgoingResource;
-        if (!bankContainsResources) {
-            socketMessageSender.sendMessage(clientSocket,
-                    String.format("The bank not have enough resource with type %s in storage", outgoingResource));
-        }
-        return bankContainsResources;
-    }
-
-
-    private boolean canBuildRoad(Edge currentEdge, User user, CatanGame catanGame) {
-        if (!user.isHisTurn()) {
-            return false;
-        }
-
-        if (catanGame.getGameState().equals(GameState.PREPARATION_BUILD_ROADS)) {
-            long countOfRoads = catanGame.getEdges().stream()
-                    .filter(edge -> edge.getUser() != null && edge.getUser().equals(user))
-                    .count();
-            return countOfRoads < catanGame.getNumOfTurn() && currentEdge.getType().equals(EdgeBuildingType.NONE);
-        }
-
-        Map<Resource, Integer> roadCost = ResourceCost.getRoadCost();
-        boolean hasRequiresResources = hasRequiredResources(user, roadCost);
-
-        return currentEdge.getType().equals(EdgeBuildingType.NONE)
-                && hasAvailableEdgeForUser(currentEdge, user, catanGame)
-                && hasRequiresResources;
-    }
-
-    private boolean canBuiltSettlement(Vertex currentVertex, User user, CatanGame catanGame) {
-        if (!user.isHisTurn()) {
-            return false;
-        }
-        if (catanGame.getGameState().equals(GameState.PREPARATION_BUILD_SETTLEMENTS)) {
-            long countOfSettlements = catanGame.getVertices().stream()
-                    .filter(vertex -> vertex.getUser() != null && vertex.getUser().equals(user))
-                    .count();
-            return countOfSettlements < catanGame.getNumOfTurn() && currentVertex.getType().equals(VertexBuildingType.NONE);
-        }
-
-        Map<Resource, Integer> settlementCost = ResourceCost.getSettlementCost();
-        boolean hasRequiredResources = hasRequiredResources(user, settlementCost);
-
-        return currentVertex.getType().equals(VertexBuildingType.NONE)
-                && hasAvailableVertexForUser(currentVertex, user, catanGame)
-                && hasRequiredResources;
-    }
-
-    private boolean canBuildCity(Vertex currentVertex, User user, CatanGame catanGame) {
-        if (!user.isHisTurn()) {
-            return false;
-        }
-
-        Map<Resource, Integer> cityCost = ResourceCost.getCityCost();
-        boolean hasRequiresResources = hasRequiredResources(user, cityCost);
-
-        return currentVertex.getType().equals(VertexBuildingType.CITY)
-                && hasAvailableVertexToBuildCity(currentVertex, user, catanGame)
-                && hasRequiresResources;
-    }
-
-    private void transferResourceToBank(Bank bank, User user, Map<Resource, Integer> resourceCost) {
-        for (Map.Entry<Resource, Integer> entry : resourceCost.entrySet()) {
-            Resource resource = entry.getKey();
-            int cost = entry.getValue();
-
-            user.getInventory().put(resource, user.getInventory().get(resource) - cost);
-            bank.getStorage().put(resource, bank.getStorage().getOrDefault(resource, 0) + cost);
-        }
-    }
-
-    private boolean hasAvailableVertexToBuildCity(Vertex currentVertex, User user, CatanGame catanGame) {
-        return MapUtil.getUserVertices(user, catanGame.getVertices()).contains(currentVertex);
-    }
-
-    private boolean hasAvailableVertexForUser(Vertex currentVertex, User user, CatanGame catanGame) {
-        List<Edge> edges = catanGame.getEdges();
-        return MapUtil.getAvailableVerticesForUser(user, edges).contains(currentVertex);
-    }
-
-    private boolean hasAvailableEdgeForUser(Edge currentEdge, User user, CatanGame catanGame) {
-        List<Vertex> vertices = catanGame.getVertices();
-        List<Edge> edges = catanGame.getEdges();
-        return MapUtil.getAvailableEdgesForUser(user, vertices, edges).contains(currentEdge);
-
-    }
-
-    private boolean hasRequiredResources(User user, Map<Resource, Integer> cost) {
-        return cost.entrySet().stream()
-                .allMatch(entry -> user.getInventory().getOrDefault(entry.getKey(), 0) >= entry.getValue());
-    }
-
     private UserEntity getUserEntity(Socket clientSocket) {
-        String token = findTokenBySocket(clientSocket);
+        String token = findTokenBySocket(clientSocket).orElse("");
         if (!token.isEmpty()) {
             return userService.findUserEntityByToken(token)
                     .orElseThrow(() -> new UserEntityNotFoundException(token));
@@ -313,6 +312,16 @@ public class SocketServiceImpl implements SocketService {
         return socketInfos.stream()
                 .filter(socketInfo -> socketInfo.getSocket().equals(clientSocket))
                 .map(SocketInfo::getLobby)
+                .findFirst()
+                .orElseThrow(() -> new LobbyNotFoundException(address));
+    }
+
+    private CatanGame getGameBySocket(Socket clientSocket) {
+        String address = clientSocket.getInetAddress().getHostAddress();
+        return socketInfos.stream()
+                .filter(socketInfo -> socketInfo.getSocket().equals(clientSocket))
+                .map(SocketInfo::getLobby)
+                .map(Lobby::getCatanGame)
                 .findFirst()
                 .orElseThrow(() -> new LobbyNotFoundException(address));
     }
@@ -345,12 +354,11 @@ public class SocketServiceImpl implements SocketService {
         socketInfos.remove(socketInfoToRemove);
     }
 
-    private String findTokenBySocket(Socket clientSocket) {
+    private Optional<String> findTokenBySocket(Socket clientSocket) {
         return socketInfos.stream()
                 .filter(si -> si.getSocket().equals(clientSocket))
                 .map(SocketInfo::getToken)
-                .findFirst()
-                .orElse("");
+                .findFirst();
     }
 
     private void updateLobbyInfo(SocketInfo socketInfo, LobbyEntity lobbyEntity, User user) {
@@ -370,5 +378,14 @@ public class SocketServiceImpl implements SocketService {
                 .filter(socketInfo -> socketInfo.getSocket().equals(clientSocket))
                 .findFirst()
                 .orElseThrow(() -> new SocketNotFoundException(address));
+    }
+
+    private boolean isNotUserTurn(Socket clientSocket) {
+        User user = getUserBySocket(clientSocket);
+        return !user.isHisTurn();
+    }
+
+    private boolean isNotUserTurn(User user) {
+        return !user.isHisTurn();
     }
 }
