@@ -1,6 +1,6 @@
 package com.ashapiro.catanserver.socketServer;
 
-import com.ashapiro.catanserver.socketServer.util.Lobby;
+import com.ashapiro.catanserver.game.model.Lobby;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
