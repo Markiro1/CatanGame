@@ -29,4 +29,12 @@ public class ResourceCost {
         cityCost.put(Resource.ORE, 3);
         return cityCost;
     }
+
+    public static Map<Resource, Integer> getCardCost() {
+        Map<Resource, Integer> cardCost = new HashMap<>();
+        cardCost.put(Resource.WOOL, 1);
+        cardCost.put(Resource.GRAIN, 1);
+        cardCost.put(Resource.ORE, 1);
+        return cardCost;
+    }
 }
