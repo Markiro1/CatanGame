@@ -2,11 +2,13 @@ package com.ashapiro.catanserver.socketServer.util;
 
 import com.ashapiro.catanserver.dto.user.SimpleUserDTO;
 import com.ashapiro.catanserver.enums.EventType;
-import com.ashapiro.catanserver.game.User;
+import com.ashapiro.catanserver.game.model.Lobby;
+import com.ashapiro.catanserver.game.model.User;
+import com.ashapiro.catanserver.game.enums.Card;
 import com.ashapiro.catanserver.game.enums.Resource;
 import com.ashapiro.catanserver.socketServer.dto.UserDTO;
+import com.ashapiro.catanserver.socketServer.payload.SocketBroadcastPayload;
 import com.ashapiro.catanserver.socketServer.payload.broadcast.*;
-import com.ashapiro.catanserver.socketServer.payload.request.SocketRequestStartGamePayload;
 
 import java.net.Socket;
 import java.util.List;
@@ -15,11 +17,10 @@ public class BroadcastFactory {
 
     public SocketBroadcastStartGamePayload createStartGameBroadcast(
             Socket socket,
-            SocketRequestStartGamePayload socketPayload,
+            int seed,
+            List<Integer> numHexesInMapRow,
             Lobby lobby
     ) {
-        List<Integer> numHexesInMapRow = socketPayload.getNumHexesInMapRow();
-        int seed = lobby.startGame(numHexesInMapRow);
         List<UserDTO> userDTOs = mapUserToUserDTO(lobby);
         UserDTO currentUserDTO = mapCurrentUserToUserDTO(socket, lobby);
 
@@ -102,8 +103,12 @@ public class BroadcastFactory {
         );
     }
 
-    public SocketBroadcastUserTurnPayload createUserTurnBroadcast(Long userId, Integer numOfTurn, EventType eventType) {
-        return new SocketBroadcastUserTurnPayload(
+    public DefaultSocketBroadcastPayload createUserTurnBroadcast(EventType eventType) {
+        return new DefaultSocketBroadcastPayload(eventType);
+    }
+
+    public SocketBroadcastPrepareUserTurnPayload createPrepareUserTurnBroadcast(Long userId, Integer numOfTurn, EventType eventType) {
+        return new SocketBroadcastPrepareUserTurnPayload(
                 eventType,
                 userId,
                 numOfTurn
@@ -127,8 +132,16 @@ public class BroadcastFactory {
     }
 
     public SocketBroadcastPayload createUserGetResourceBroadcast(Long userId, List<Resource> resources) {
-        return new SocketBroadcastUserGetResourcesPayload(
+        return new SocketBroadcastUserResourcesPayload(
                 EventType.BROADCAST_USER_GET_RESOURCE,
+                userId,
+                resources
+        );
+    }
+
+    public SocketBroadcastPayload createUserRobberRobberyBroadcast(Long userId, List<Resource> resources) {
+        return new SocketBroadcastUserResourcesPayload(
+                EventType.BROADCAST_ROBBER_ROBBERY,
                 userId,
                 resources
         );
@@ -136,16 +149,102 @@ public class BroadcastFactory {
 
     public SocketBroadcastPayload createUserTradeBroadcast(
             Long userId,
-            Resource incomingResource,
-            Resource outgoingResource,
-            int requestedCountOfOutgoingResource
+            Resource sellResource,
+            Resource buyResource,
+            int requestedAmountOfBuyResource
     ) {
         return new SocketBroadcastUserTrade(
                 EventType.BROADCAST_USER_TRADE,
                 userId,
-                incomingResource,
-                outgoingResource,
-                requestedCountOfOutgoingResource
+                sellResource,
+                buyResource,
+                requestedAmountOfBuyResource
+        );
+    }
+
+    public SocketBroadcastPayload createUserRobberyBroadcast(Long robberId, Long victimId, Integer hexId, Resource stealingResource) {
+        return new SocketBroadcastUserRobberyPayload(
+                EventType.BROADCAST_USER_ROBBERY,
+                robberId,
+                victimId,
+                hexId,
+                stealingResource
+        );
+    }
+
+    public SocketBroadcastPayload createStartRobberyBroadcast() {
+        return new DefaultSocketBroadcastPayload(EventType.BROADCAST_ROBBERY_START);
+    }
+
+    public SocketBroadcastPayload createBuyCardBroadcast(Long userId, Card card) {
+        return new SocketBroadcastBuyCardPayload(
+                EventType.BROADCAST_BUY_CARD,
+                userId,
+                card
+        );
+    }
+
+    public SocketBroadcastPayload createUseMonopolyCard(Long userId, Resource resource) {
+        return new SocketBroadcastUseMonopolyCardPayload(
+                EventType.BROADCAST_USE_MONOPOLY_CARD,
+                userId,
+                resource
+        );
+    }
+
+    public SocketBroadcastPayload createUseRoadBuildingCard(Long userId) {
+        return new SocketBroadcastUseRoadBuildingCardPayload(
+                EventType.BROADCAST_USE_ROAD_BUILDING_CARD,
+                userId
+        );
+    }
+
+    public SocketBroadcastPayload createUseYearOfPlentyCard(Long userId, List<Resource> resources) {
+        return new SocketBroadcastUseYearOfPlentyCardPayload(
+                EventType.BROADCAST_USE_YEAR_OF_PLENTY_CARD,
+                userId,
+                resources
+        );
+    }
+
+    public SocketBroadcastPayload createUseKnightCard(Long userId, int hexId) {
+        return new SocketBroadcastUseKnightCardPayload(
+                EventType.BROADCAST_USE_KNIGHT_CARD,
+                userId,
+                hexId
+        );
+    }
+
+    public SocketBroadcastPayload createUserGetLongestRoadBroadcast(Long userId) {
+        return new SocketBroadcastUserGetLargestCardPayload(
+                EventType.BROADCAST_USER_GET_LONGEST_ROAD,
+                userId
+        );
+    }
+
+    public SocketBroadcastPayload createUserGetLargestArmyBroadcast(Long userId) {
+        return new SocketBroadcastUserGetLargestCardPayload(
+                EventType.BROADCAST_USER_GET_LARGEST_ARMY,
+                userId
+        );
+    }
+
+    public SocketBroadcastPayload createExchangeResourcesBroadcast(
+            Long initiatorUserId,
+            Long targetUserId,
+            int targetAmountOfResource,
+            int initiatorAmountOfResource,
+            Resource initiatorResource,
+            Resource targetResource
+    ) {
+        return new SocketBroadcastExchangePayload(
+                EventType.BROADCAST_EXCHANGE,
+                initiatorUserId,
+                targetUserId,
+                targetAmountOfResource,
+                initiatorAmountOfResource,
+                initiatorResource,
+                targetResource
         );
     }
 }
