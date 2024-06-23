@@ -37,6 +37,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final ModelMapper modelMapper;
 
+    @Transactional
     @Override
     public SimpleUserDTO register(RegisterDTO registerDto) {
         return userService.save(registerDto);
@@ -45,7 +46,6 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     @Override
     public JwtResponseDTO createAuthToken(LoginDTO requestDto) {
-
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(requestDto.login(), requestDto.password())
