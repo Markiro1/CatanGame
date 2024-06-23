@@ -1,19 +1,22 @@
 package com.ashapiro.catanserver.socketServer.payload.request;
 
+import com.ashapiro.catanserver.enums.EventType;
 import com.ashapiro.catanserver.game.enums.Resource;
 import com.ashapiro.catanserver.socketServer.payload.SocketMessagePayload;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
 @NoArgsConstructor
-@Getter @Setter
-@SuperBuilder
-public class SocketRequestTradeResourcePayload extends SocketMessagePayload {
+@AllArgsConstructor
+@Getter
+public class SocketRequestTradeResourcePayload implements SocketMessagePayload {
 
-    private int requestedCountOfOutgoingResource;
+    private EventType eventType;
 
-    private Resource incomingResource;
+    private int requestedAmountOfBuyResource;
 
-    private Resource outgoingResource;
+    private Resource sellResource;
+
+    private Resource buyResource;
 }
